@@ -1,27 +1,82 @@
 EvidenceID,CitationKey,SourceID,MorphismID,TargetID,Notes
-101,Clark1998,theory:extended_mind_thesis,rel:explains,phenomenon:extended_cognition,"The foundational paper arguing that cognitive processes can extend into the environment."
-102,Friston2010,theory:predictive_processing,rel:explains,phenomenon:perception_action_coupling,"Explains perception and action as two sides of the same process of minimizing prediction error."
-103,Rensink1997,method:psychophysics,rel:investigates,phenomenon:change_blindness,"Classic study using a flicker paradigm to demonstrate the need for attention to perceive change."
-104,Rensink1997,phenomenon:change_blindness,rel:is_evidence_for,theory:attentional_models,"The findings are used to argue that attention is necessary for forming a conscious percept."
-105,Crick1998,theory:ncc,rel:posits,concept:neural_correlates,"Argues for the research program of finding the minimal neural mechanisms sufficient for consciousness."
-106,Block1995,theory:access_phenomenal_distinction,rel:defines,phenomenon:access_consciousness,"Defines A-consciousness as the state accessible to reasoning and report."
+101,Clark1998,theory:extended_mind_thesis,rel:explains,phenomenon:extended_cognition,The foundational paper arguing that cognitive processes can extend into the environment.
+102,Friston2010,theory:predictive_processing,rel:explains,phenomenon:perception_action_coupling,Explains perception and action as two sides of the same process of minimizing prediction error.
+103,Rensink1997,method:psychophysics,rel:investigates,phenomenon:change_blindness,Classic study using a flicker paradigm to demonstrate the need for attention to perceive change.
+104,Rensink1997,phenomenon:change_blindness,rel:is_evidence_for,theory:attentional_models,The findings are used to argue that attention is necessary for forming a conscious percept.
+105,Crick1998,theory:ncc,rel:posits,concept:neural_correlates,Argues for the research program of finding the minimal neural mechanisms sufficient for consciousness.
+106,Block1995,theory:access_phenomenal_distinction,rel:defines,phenomenon:access_consciousness,Defines A-consciousness as the state accessible to reasoning and report.
 107,Block1995,theory:access_phenomenal_distinction,rel:defines,phenomenon:phenomenal_consciousness,"Defines P-consciousness as raw subjective experience, independent of report."
-108,Lamme2010,theory:recurrent_processing_theory,rel:critiques,theory:gnwt,"Argues that phenomenal consciousness (via recurrent processing) can exist without the global broadcast required by GNW."
+108,Lamme2010,theory:recurrent_processing_theory,rel:critiques,theory:gnwt,Argues that phenomenal consciousness (via recurrent processing) can exist without the global broadcast required by GNW.
 109,Lamme2010,theory:recurrent_processing_theory,rel:is_incompatible_with,theory:attentional_models,"Posits that phenomenal feel arises from local recurrent processing, which can occur pre-attentively."
-110,Gallese2011,theory:embodied_cognition,rel:explains,phenomenon:social_cognition,"Proposes that understanding others' actions is based on activating one's own motor system (embodied simulation)."
-111,Searle1980,theory:philosophy,rel:critiques,theory:computational_theories,"The 'Chinese Room' argument critiques the idea that syntax (computation) is sufficient for semantics (understanding)."
-112,ORegan1992,theory:sensorimotor_theory,rel:explains,phenomenon:visual_processing,"Argues that seeing is a way of acting and the world can be used as an 'outside memory'."
-113,Blum2022,theory:computational_theories,rel:defines,phenomenon:machine_consciousness,"Proposes a specific architecture (the Conscious Turing Machine) as a model for artificial consciousness."
-114,Fink2024,theory:structuralism,rel:uses_method,method:phenomenology,"Advocates for using phenomenological methods to map the structure of experience to be matched with physical structures."
-115,Jackson1982,phenomenon:qualia,rel:is_evidence_for,theory:philosophy,"The 'Mary's Room' thought experiment is used as evidence against physicalism."
-116,Johansson2005,method:psychophysics,rel:investigates,phenomenon:choice_blindness,"Demonstrates choice blindness in a real-world decision task."
-117,Gibson1979,theory:ecological_psychology,rel:defines,phenomenon:affordances,"Defines affordances as opportunities for action directly perceived by an agent."
-118,Whyte2022,theory:predictive_processing,rel:explains,phenomenon:cognitive_access,"Models cognitive access as a form of active inference where the system selects what information to process."
-119,Kleiner2024,theory:structuralism,rel:critiques,theory:ncc,"Argues that the search for NCCs should be replaced by a search for shared structure between experience and physical systems."
+110,Gallese2011,theory:embodied_cognition,rel:explains,phenomenon:social_cognition,Proposes that understanding others' actions is based on activating one's own motor system (embodied simulation).
+111,Searle1980,theory:philosophy,rel:critiques,theory:computational_theories,The 'Chinese Room' argument critiques the idea that syntax (computation) is sufficient for semantics (understanding).
+112,ORegan1992,theory:sensorimotor_theory,rel:explains,phenomenon:visual_processing,Argues that seeing is a way of acting and the world can be used as an 'outside memory'.
+113,Blum2022,theory:computational_theories,rel:defines,phenomenon:machine_consciousness,Proposes a specific architecture (the Conscious Turing Machine) as a model for artificial consciousness.
+114,Fink2024,theory:structuralism,rel:uses_method,method:phenomenology,Advocates for using phenomenological methods to map the structure of experience to be matched with physical structures.
+115,Jackson1982,phenomenon:qualia,rel:is_evidence_for,theory:philosophy,The 'Mary's Room' thought experiment is used as evidence against physicalism.
+116,Johansson2005,method:psychophysics,rel:investigates,phenomenon:choice_blindness,Demonstrates choice blindness in a real-world decision task.
+117,Gibson1979,theory:ecological_psychology,rel:defines,phenomenon:affordances,Defines affordances as opportunities for action directly perceived by an agent.
+118,Whyte2022,theory:predictive_processing,rel:explains,phenomenon:cognitive_access,Models cognitive access as a form of active inference where the system selects what information to process.
+119,Kleiner2024,theory:structuralism,rel:critiques,theory:ncc,Argues that the search for NCCs should be replaced by a search for shared structure between experience and physical systems.
 120,Simons1999,method:psychophysics,rel:investigates,phenomenon:inattentional_blindness,"The 'gorillas in our midst' study, a famous demonstration of inattentional blindness."
-121,Abramsky2022,theory:process_theory,rel:explains,theory:iit,"Provides a formal framework for IIT using the categorical language of process theories."
-122,Bradley2012,theory:categorical_framework,rel:explains,phenomenon:phenomenal_consciousness,"Uses category theory to formalize the relationship between phenomenal states and perceptual reports."
-123,De-Wit2016,theory:categorical_framework,rel:posits,concept:mind,"Argues that category theory is a suitable language for formalizing theories in consciousness science."
-124,Germine2004,concept:process_philosophy,rel:explains,concept:time,"Discusses the nature of time and consciousness from a process-holism perspective."
-125,Heunen2022,theory:categorical_framework,rel:explains,phenomenon:quantum_consciousness,"Develops a categorical model of consciousness drawing on formalisms from quantum theory."
-126,Zaldivar2013,theory:topos_theory,rel:explains,phenomenon:conscious_universe,"Builds a formal model of a conscious universe using topos theory."
+121,Abramsky2022,theory:process_theory,rel:explains,theory:iit,Provides a formal framework for IIT using the categorical language of process theories.
+122,Bradley2012,theory:categorical_framework,rel:explains,phenomenon:phenomenal_consciousness,Uses category theory to formalize the relationship between phenomenal states and perceptual reports.
+123,De-Wit2016,theory:categorical_framework,rel:posits,concept:mind,Argues that category theory is a suitable language for formalizing theories in consciousness science.
+124,Germine2004,concept:process_philosophy,rel:explains,concept:time,Discusses the nature of time and consciousness from a process-holism perspective.
+125,Heunen2022,theory:categorical_framework,rel:explains,phenomenon:quantum_consciousness,Develops a categorical model of consciousness drawing on formalisms from quantum theory.
+126,Zaldivar2013,theory:topos_theory,rel:explains,phenomenon:conscious_universe,Builds a formal model of a conscious universe using topos theory.
+127,Evers2025,theory:multidimensional_consciousness_model,rel:explains,phenomenon:artificial_consciousness,The model provides a framework for understanding and approaching the complexities of artificial consciousness.
+128,Evers2025,theory:multidimensional_consciousness_model,rel:defines,concept:awareness,The model helps define awareness in terms of testable attributes.
+129,Evers2025,theory:multidimensional_consciousness_model,rel:defines,concept:intentional_action,The model posits intentional action as a minimal necessary condition for aware processing.
+130,Evers2025,method:formal_modeling,rel:uses_method,theory:multidimensional_consciousness_model,The paper uses formal modeling to develop the multidimensional model.
+131,Evers2025,theory:multidimensional_consciousness_model,rel:uses_method,method:conceptual_analysis,The paper uses conceptual analysis to develop the multidimensional model.
+132,Nieder2020,phenomenon:avian_consciousness,rel:is_a,phenomenon:consciousness_science,Avian consciousness is a specific instance of consciousness.
+133,Nieder2020,method:delayed_detection_task,rel:investigates,phenomenon:avian_consciousness,Used to probe the neural correlates of avian consciousness.
+134,Nieder2020,method:neuroimaging,rel:measures,concept:neural_activity,Neuroimaging is used to measure neural activity in the brain.
+135,Nieder2020,method:neuroimaging,rel:uses_method,method:delayed_detection_task,Neuroimaging is used in conjunction with the delayed detection task.
+136,Nieder2020,concept:neural_activity,rel:is_evidence_for,phenomenon:avian_consciousness,Neural activity in the NCL correlates with the crows' perceptual reports.
+137,Nieder2020,theory:two_stage_process_awareness,rel:explains,concept:subjective_experience,The two-stage process explains how subjective experience arises from neural activity.
+138,Nieder2020,theory:two_stage_process_awareness,rel:explains,phenomenon:avian_consciousness,The two-stage process explains the neural activity related to avian consciousness.
+139,Nieder2020,theory:gnwt,rel:explains,phenomenon:avian_consciousness,The global neuronal workspace theory is suggested as a possible explanation for the findings.
+140,Riganello2018,theory:ncc,rel:measures,phenomenon:access_consciousness,Heart rate variability entropy (HRV) can discriminate disorders of consciousness
+141,Riganello2018,method:neuroimaging,rel:investigates,concept:neural_correlates,Resting-state fMRI brain connectivity of the central autonomic network is correlated with heart rate variability entropy.
+142,Riganello2018,method:neuroimaging,rel:investigates,phenomenon:access_consciousness,Resting-state fMRI brain connectivity of the central autonomic network is correlated with heart rate variability entropy.
+143,Merker2007,theory:centrencephalic_system,rel:defines,concept:intentionality,The centrencephalic system is crucial in the organization of conscious and volitional functions.
+144,Merker2007,theory:centrencephalic_system,rel:defines,concept:intentional_action,The centrencephalic system is crucial in the organization of conscious and volitional functions.
+145,Merker2007,theory:centrencephalic_system,rel:relies_on,concept:attention,The centrencephalic system relies on attention.
+146,Merker2007,theory:centrencephalic_system,rel:relies_on,concept:awareness,The centrencephalic system relies on awareness.
+147,Merker2007,theory:selection_triangle,rel:relies_on,concept:motivation,The selection triangle relies on motivation.
+148,Merker2007,theory:selection_triangle,rel:relies_on,concept:action_selection,The selection triangle relies on action selection.
+149,Merker2007,theory:selection_triangle,rel:relies_on,concept:target_selection,The selection triangle relies on target selection.
+150,Merker2007,phenomenon:anencephaly,rel:is_evidence_for,theory:centrencephalic_system,Evidence from anencephaly suggests that brainstem mechanisms are integral to the constitution of the conscious state.
+151,Merker2007,phenomenon:hydranencephaly,rel:is_evidence_for,theory:centrencephalic_system,Evidence from hydranencephaly suggests that brainstem mechanisms are integral to the constitution of the conscious state.
+152,Merker2007,phenomenon:absence_seizures,rel:is_evidence_for,theory:centrencephalic_system,Evidence from absence seizures suggests that brainstem mechanisms are integral to the constitution of the conscious state.
+153,Merker2007,phenomenon:sprague_effect,rel:is_evidence_for,theory:centrencephalic_system,The Sprague effect demonstrates that visual attention and perception are mediated at both forebrain and midbrain levels.
+154,Fries2016,theory:oscillatory_coherence_theory,rel:explains,phenomenon:access_consciousness,Oscillatory coherence explains how information gains access to awareness.
+155,Fries2016,theory:oscillatory_coherence_theory,rel:relies_on,concept:neuronal_oscillations,The theory relies on the concept of neuronal oscillations.
+156,Fries2016,theory:oscillatory_coherence_theory,rel:relies_on,concept:neuronal_coherence,The theory relies on the concept of neuronal coherence.
+157,Fries2016,theory:oscillatory_coherence_theory,rel:explains,phenomenon:perception_action_coupling,Coherent oscillations facilitate perception-action coupling.
+158,Fries2016,theory:gnwt,rel:relies_on,concept:neuronal_oscillations,The global workspace relies on neuronal oscillations.
+159,Fries2016,theory:oscillatory_coherence_theory,rel:explains,phenomenon:visual_processing,Coherent oscillations facilitate visual processing.
+160,Fries2016,theory:oscillatory_coherence_theory,rel:explains,phenomenon:attention,Coherent oscillations facilitate attention.
+161,KirkebyHinrup2024,theory:joint_determinant_theory,rel:posits,concept:neural_correlates,JDT posits content-specific NCCs.
+162,KirkebyHinrup2024,theory:joint_determinant_theory,rel:posits,concept:process_philosophy,JDT posits consciousness is fundamentally pluralistic.
+163,KirkebyHinrup2024,theory:integrative_pluralism,rel:posits,concept:representation,Integrative Pluralism suggests theories provide complementary and compatible explanations.
+164,KirkebyHinrup2024,method:measure_centrality_index,rel:probes,concept:representation,MCI maps the concepts and measures of theories.
+165,KirkebyHinrup2024,method:inference_to_best_explanation,rel:uses_method,method:formal_modeling,QBE uses Bayesian updating.
+166,KirkebyHinrup2024,method:criteria_based_approach,rel:probes,concept:representation,CRIT evaluates theories against a set of criteria.
+167,KirkebyHinrup2024,method:accelerating_research_on_consciousness,rel:probes,concept:representation,ARC uses falsification combined with adversarial collaboration.
+168,KirkebyHinrup2024,concept:hot_topics,rel:is_a,phenomenon:consciousness_science,Hot topics are specific cases that dominate debates in the field.
+169,KirkebyHinrup2024,concept:cold_cases,rel:is_a,phenomenon:consciousness_science,Cold cases are instances of empirical evidence that have received little attention.
+170,KirkebyHinrup2024,phenomenon:replication_crisis,rel:relies_on,concept:cold_cases,The replication crisis is related to the number of cold cases.
+171,KirkebyHinrup2024,theory:access_phenomenal_distinction,rel:explains,phenomenon:access_consciousness,APD explains A-consciousness.
+172,KirkebyHinrup2024,theory:access_phenomenal_distinction,rel:explains,phenomenon:phenomenal_consciousness,APD explains P-consciousness.
+173,KirkebyHinrup2024,theory:multiple_generator_hypothesis,rel:posits,concept:neural_correlates,MGH posits multiple generators of consciousness.
+174,Evans2003,theory:arousal_inhibitory_mechanism,rel:explains,phenomenon:cyclical_alternating_pattern,The AIM is related to the cyclical alternating pattern.
+175,Evans2003,theory:arousal_inhibitory_mechanism,rel:relies_on,concept:attention,The AIM mediates cognitive changes between sleep and wakefulness.
+176,Evans2003,theory:thalamo_cortical_integrating_mechanism,rel:explains,phenomenon:access_consciousness,The thalamo-cortical integrating mechanism may underlie awareness.
+177,Evans2003,concept:total_consciousness,rel:relies_on,concept:awareness,Total consciousness requires awareness.
+178,Evans2003,concept:total_consciousness,rel:relies_on,concept:memory,Total consciousness requires memory.
+179,Evans2003,concept:total_consciousness,rel:relies_on,concept:emotion,Total consciousness requires emotion.
+180,Evans2003,concept:total_consciousness,rel:relies_on,concept:self_awareness,Total consciousness requires self-awareness.
+181,Evans2003,theory:gnwt,rel:relies_on,concept:attention,Mentions the global workspace theory in relation to attention.
