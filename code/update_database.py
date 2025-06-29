@@ -4,17 +4,14 @@ This script analyzes research paper PDFs using the Gemini API to automatically
 populate a relational database that represents the structure of a scientific field.
 
 It reads a list of PDF file paths from standard input, and for each PDF, it:
-1.  Constructs a detailed prompt for the Gemini API, including the PDF and a
-    list of existing concepts (objects) and relationships (morphisms) from the database.
-2.  Instructs Gemini to return a structured JSON object containing:
-    a. Bibliographic information for the paper.
-    b. Any new concepts or theories identified.
-    c. A list of evidential links (morphisms) asserted in the paper.
-3.  Reads the existing database CSV files into pandas DataFrames.
-4.  Appends the new, non-duplicate information to the DataFrames.
-5.  Saves the updated DataFrames back to the CSV files.
+1.  Performs a full analysis using the Gemini API.
+2.  Generates a CitationKey from the returned bibliographic data.
+3.  Checks if this CitationKey already exists in the database.
+4.  If the paper is new, it appends the new, non-duplicate information to the
+    database CSV files. If the paper already exists, it does nothing.
 
-This script is designed to be resumable and idempotent.
+This script is designed to be idempotent. Running it twice with the same
+input will not create duplicate entries in the database.
 
 Prerequisites:
 - pandas, requests, tqdm
@@ -64,70 +61,60 @@ def pdf_to_base64(pdf_path: str) -> Optional[str]:
         return None
 
 def create_citation_key(authors: str, year: int) -> str:
-    """Creates a unique CitationKey (e.g., 'Author1EtAl2023')."""
-    if not authors:
-        return f"Unknown{year}"
-    first_author = authors.split(',')[0].strip().split(' ')[-1]
-    # Remove non-alphanumeric characters
-    first_author = re.sub(r'\W+', '', first_author)
-    return f"{first_author}{year}"
+    """Creates a unique CitationKey (e.g., 'Author2023')."""
+    if not authors or not year:
+        return None
+    first_author_last_name = authors.split(',')[0].strip().split(' ')[-1]
+    first_author_last_name = re.sub(r'\W+', '', first_author_last_name)
+    return f"{first_author_last_name}{year}"
+
+def call_gemini_api(payload: Dict[str, Any], api_key: str) -> Optional[Dict[str, Any]]:
+    """Generic function to call the Gemini API and handle responses."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    headers = {"Content-Type": "application/json"}
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=API_TIMEOUT)
+        response.raise_for_status()
+        
+        result_text = response.json()['candidates'][0]['content']['parts'][0]['text']
+        cleaned_text = re.sub(r'```json\n?|```', '', result_text).strip()
+        
+        return json.loads(cleaned_text)
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Gemini API: {e}", file=sys.stderr)
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        print(f"Error parsing JSON response: {e}", file=sys.stderr)
+        print(f"Received text: {result_text}", file=sys.stderr)
+    except Exception as e:
+        print(f"An unexpected error occurred during API call: {e}", file=sys.stderr)
+    
+    return None
 
 # --- Core Gemini and Database Logic ---
 
-def build_prompt(existing_objects_df: pd.DataFrame, existing_morphisms_df: pd.DataFrame) -> str:
-    """Builds the master prompt for the Gemini API call."""
-    
-    # Create concise lists of existing objects and morphisms for the prompt context
+def get_full_analysis(pdf_base64: str, existing_objects_df: pd.DataFrame, existing_morphisms_df: pd.DataFrame, api_key: str) -> Optional[Dict[str, Any]]:
+    """Performs the full, detailed analysis of the PDF."""
     existing_objects_str = "\n".join([f"- {row['ObjectID']}: {row['Name']}" for _, row in existing_objects_df.iterrows()])
     existing_morphisms_str = "\n".join([f"- {row['MorphismID']}: Connects '{row['SourceType']}' to '{row['TargetType']}' (Label: {row['Label']})" for _, row in existing_morphisms_df.iterrows()])
-
-    # The JSON schema we want the model to follow
     json_schema = """
     {
-      "bibliographic": {
-        "authors": "Full list of authors, comma-separated",
-        "year": 2024,
-        "title": "The full title of the paper",
-        "publication": "The journal or conference name"
-      },
-      "new_objects": [
-        {
-          "ObjectID": "type:unique_id",
-          "Name": "Human-readable name",
-          "Type": "Theory|Phenomenon|Method|Concept",
-          "Description": "A one-sentence description."
-        }
-      ],
-      "new_evidence": [
-        {
-          "SourceID": "ObjectID of the source object",
-          "MorphismID": "MorphismID of the relationship",
-          "TargetID": "ObjectID of the target object",
-          "Notes": "Optional brief quote or context from the paper."
-        }
-      ]
+      "bibliographic": {"authors": "Full list of authors", "year": 2024, "title": "Full title", "publication": "Journal name"},
+      "new_objects": [{"ObjectID": "type:id", "Name": "Object Name", "Type": "Theory|Phenomenon|Method|Concept", "Description": "A sentence."}],
+      "new_evidence": [{"SourceID": "ObjectID", "MorphismID": "MorphismID", "TargetID": "ObjectID", "Notes": "Optional context."}]
     }
     """
-
     prompt = f"""
-You are an expert academic research assistant specializing in the philosophy of science and formal modeling. Your task is to analyze a research paper and extract structured information to populate a categorical database.
+You are an expert academic research assistant. Your task is to analyze a research paper and extract structured information to populate a categorical database.
 
 **INSTRUCTIONS:**
 
-1.  **Analyze the attached PDF.** Read the paper to understand its main arguments, methods, and conclusions.
-
-2.  **Extract Bibliographic Data.** Identify the authors, year, title, and publication venue.
-
-3.  **Identify Key Objects.** Identify the core theories, phenomena, methods, and concepts discussed.
-    * **IMPORTANT**: Before creating a new object, check if a similar one already exists in the `EXISTING OBJECTS` list below. If it exists, **USE THE EXISTING ObjectID**.
-    * If a genuinely new concept is introduced, create a new object for it. The `ObjectID` should follow the format `type:unique_id` (e.g., `theory:quantum_foam_consciousness`). The `Type` must be one of: `Theory`, `Phenomenon`, `Method`, `Concept`.
-
-4.  **Identify Key Evidence (Morphisms).** Identify the main claims of the paper as relationships between objects.
-    * A claim is a directed arrow: `(Source Object) --[Relationship]--> (Target Object)`.
-    * For the `Relationship`, you **MUST** use one of the predefined `MorphismID`s from the `EXISTING MORPHISMS` list below.
-    * For the `Source` and `Target`, use the appropriate `ObjectID`s (either existing or new ones you've defined in this step).
-
-5.  **Format Output as JSON.** Return **ONLY** a single, valid JSON object that strictly follows the schema provided. Do not include any other text or explanations.
+1.  **Analyze the attached PDF.**
+2.  **Extract Bibliographic Data.**
+3.  **Identify Key Objects.** Before creating a new object, check if one already exists in the `EXISTING OBJECTS` list. If so, **USE THE EXISTING ObjectID**. Otherwise, create a new one. `Type` must be one of: `Theory`, `Phenomenon`, `Method`, `Concept`.
+4.  **Identify Key Evidence (Morphisms).** A claim is a directed arrow: `(Source Object) --[Relationship]--> (Target Object)`. For the `Relationship`, you **MUST** use a predefined `MorphismID` from the `EXISTING MORPHISMS` list.
+5.  **Format Output as JSON.** Return **ONLY** a single, valid JSON object that strictly follows the schema provided.
 
 ---
 **EXISTING OBJECTS (Use these IDs where possible):**
@@ -141,174 +128,126 @@ You are an expert academic research assistant specializing in the philosophy of 
 {json_schema}
 ```
 ---
-
 Now, analyze the attached PDF and generate the complete JSON object.
 """
-    return prompt
-
-def analyze_pdf_with_gemini(pdf_path: str, prompt: str, api_key: str) -> Optional[Dict[str, Any]]:
-    """Analyzes a PDF with Gemini and returns the structured JSON data."""
-    print(f"\nAnalyzing '{os.path.basename(pdf_path)}' with Gemini...")
-    
-    pdf_base64 = pdf_to_base64(pdf_path)
-    if not pdf_base64:
-        return None
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-    
     payload = {
-        "contents": [{
-            "parts": [
-                {"text": prompt},
-                {"inline_data": {"mime_type": "application/pdf", "data": pdf_base64}}
-            ]
-        }],
+        "contents": [{"parts": [{"text": prompt}, {"inline_data": {"mime_type": "application/pdf", "data": pdf_base64}}]}],
         "generationConfig": { "temperature": 0.2, "maxOutputTokens": 8192 }
     }
-    headers = {"Content-Type": "application/json"}
-    
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=API_TIMEOUT)
-        response.raise_for_status()
-        
-        result_text = response.json()['candidates'][0]['content']['parts'][0]['text']
-        # Clean up potential markdown code fences
-        cleaned_text = re.sub(r'```json\n?|```', '', result_text).strip()
-        
-        return json.loads(cleaned_text)
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Error calling Gemini API for '{pdf_path}': {e}", file=sys.stderr)
-    except (json.JSONDecodeError, KeyError) as e:
-        print(f"Error parsing JSON response for '{pdf_path}': {e}", file=sys.stderr)
-        print(f"Received text: {result_text}", file=sys.stderr)
-    except Exception as e:
-        print(f"An unexpected error occurred for '{pdf_path}': {e}", file=sys.stderr)
-    
-    return None
+    return call_gemini_api(payload, api_key)
 
-def update_database_files(data: Dict[str, Any], paths: Dict[str, str]):
+
+def update_database_files(data: Dict[str, Any], paths: Dict[str, str], citation_key: str):
     """Reads, updates, and writes back the database CSV files."""
     try:
-        # Load existing data
-        papers_df = pd.read_csv(paths['papers'])
-        objects_df = pd.read_csv(paths['objects'])
-        evidence_df = pd.read_csv(paths['evidence'])
-
         # 1. Update papers.csv
+        papers_df = pd.read_csv(paths['papers'])
         bib_info = data.get('bibliographic', {})
-        if bib_info.get('title'):
-            citation_key = create_citation_key(bib_info.get('authors'), bib_info.get('year'))
-            if citation_key not in papers_df['CitationKey'].values:
-                new_paper = pd.DataFrame([{
-                    'CitationKey': citation_key,
-                    'Authors': bib_info.get('authors'),
-                    'Year': bib_info.get('year'),
-                    'Title': bib_info.get('title'),
-                    'Publication': bib_info.get('publication'),
-                    'URL': pd.NA # URL can be found later
-                }])
-                papers_df = pd.concat([papers_df, new_paper], ignore_index=True)
-                papers_df.to_csv(paths['papers'], index=False)
-                print(f"  + Added '{citation_key}' to papers.csv")
-            else:
-                print(f"  - Paper '{citation_key}' already exists in papers.csv")
+        new_paper = pd.DataFrame([{'CitationKey': citation_key, **bib_info, 'URL': pd.NA}])
+        papers_df = pd.concat([papers_df, new_paper], ignore_index=True)
+        papers_df.to_csv(paths['papers'], index=False)
+        print(f"  + Added '{citation_key}' to papers.csv")
 
         # 2. Update c_objects.csv
+        objects_df = pd.read_csv(paths['objects'])
         new_objects = data.get('new_objects', [])
         if new_objects:
             new_obj_df = pd.DataFrame(new_objects)
-            # Filter out objects that already exist
             new_obj_df = new_obj_df[~new_obj_df['ObjectID'].isin(objects_df['ObjectID'])]
             if not new_obj_df.empty:
                 objects_df = pd.concat([objects_df, new_obj_df], ignore_index=True)
                 objects_df.to_csv(paths['objects'], index=False)
-                for obj_id in new_obj_df['ObjectID']:
-                    print(f"  + Added '{obj_id}' to c_objects.csv")
+                for obj_id in new_obj_df['ObjectID']: print(f"  + Added '{obj_id}' to c_objects.csv")
         
         # 3. Update c_evidence.csv
+        evidence_df = pd.read_csv(paths['evidence'])
         new_evidence = data.get('new_evidence', [])
         if new_evidence:
-            # Generate the citation key again for linking
-            citation_key = create_citation_key(bib_info.get('authors'), bib_info.get('year'))
-            
-            # Add citation key to each piece of evidence
-            for ev in new_evidence:
-                ev['CitationKey'] = citation_key
-
+            for ev in new_evidence: ev['CitationKey'] = citation_key
             new_ev_df = pd.DataFrame(new_evidence)
             
-            # Check for duplicates based on a combination of fields
+            # Create a unique key to prevent duplicates
             new_ev_df['unique_key'] = new_ev_df['CitationKey'] + new_ev_df['SourceID'] + new_ev_df['MorphismID'] + new_ev_df['TargetID']
-            evidence_df['unique_key'] = evidence_df['CitationKey'] + evidence_df['SourceID'] + evidence_df['MorphismID'] + evidence_df['TargetID']
-            
-            new_ev_df = new_ev_df[~new_ev_df['unique_key'].isin(evidence_df['unique_key'])]
+            if not evidence_df.empty:
+                evidence_df['unique_key'] = evidence_df['CitationKey'] + evidence_df['SourceID'] + evidence_df['MorphismID'] + evidence_df['TargetID']
+                new_ev_df = new_ev_df[~new_ev_df['unique_key'].isin(evidence_df['unique_key'])]
             
             if not new_ev_df.empty:
-                # Get the next EvidenceID
-                next_id = evidence_df['EvidenceID'].max() + 1
+                next_id = (evidence_df['EvidenceID'].max() + 1) if not evidence_df.empty else 1
                 new_ev_df['EvidenceID'] = range(next_id, next_id + len(new_ev_df))
-                new_ev_df = new_ev_df.drop(columns=['unique_key'])
                 
-                evidence_df = pd.concat([evidence_df.drop(columns=['unique_key']), new_ev_df], ignore_index=True)
-                evidence_df.to_csv(paths['evidence'], index=False)
+                final_evidence_df = pd.concat([evidence_df.drop(columns=['unique_key'], errors='ignore'), new_ev_df.drop(columns=['unique_key'])], ignore_index=True)
+                final_evidence_df.to_csv(paths['evidence'], index=False)
                 print(f"  + Added {len(new_ev_df)} new evidence entries to c_evidence.csv")
 
     except Exception as e:
         print(f"FATAL: Could not update database files. Error: {e}", file=sys.stderr)
 
-
 # --- Main Execution ---
 
 def main():
-    """Main execution function."""
-    parser = argparse.ArgumentParser(
-        description='Analyze research paper PDFs with Gemini and update a categorical database.',
-        epilog='Example: ls *.pdf | python %(prog)s --papers ../data/papers.csv ...'
-    )
-    parser.add_argument('--papers', required=True, help='Path to the papers.csv file.')
-    parser.add_argument('--objects', required=True, help='Path to the c_objects.csv file.')
-    parser.add_argument('--morphisms', required=True, help='Path to the c_morphisms.csv file.')
-    parser.add_argument('--evidence', required=True, help='Path to the c_evidence.csv file.')
+    parser = argparse.ArgumentParser(description='Analyze PDFs with Gemini and update a categorical database.')
+    parser.add_argument('--papers', required=True, help='Path to papers.csv')
+    parser.add_argument('--objects', required=True, help='Path to c_objects.csv')
+    parser.add_argument('--morphisms', required=True, help='Path to c_morphisms.csv')
+    parser.add_argument('--evidence', required=True, help='Path to c_evidence.csv')
     args = parser.parse_args()
 
-    paths = {
-        "papers": args.papers,
-        "objects": args.objects,
-        "morphisms": args.morphisms,
-        "evidence": args.evidence
-    }
-
+    paths = {"papers": args.papers, "objects": args.objects, "morphisms": args.morphisms, "evidence": args.evidence}
     api_key = get_gemini_api_key()
     
-    # Read piped PDF file paths
     pdf_files = [line.strip() for line in sys.stdin if line.strip().lower().endswith('.pdf')]
     if not pdf_files:
         print("Error: No PDF files provided via stdin.", file=sys.stderr)
         sys.exit(1)
 
-    # Load existing database once to build the initial prompt
     try:
+        # Load all databases once at the start
+        papers_df = pd.read_csv(paths['papers'])
         objects_df = pd.read_csv(paths['objects'])
         morphisms_df = pd.read_csv(paths['morphisms'])
-    except FileNotFoundError:
-        print(f"Error: Could not find initial database files. Ensure paths are correct.", file=sys.stderr)
+    except FileNotFoundError as e:
+        print(f"Error: Could not find initial database file {e.filename}. Ensure paths are correct.", file=sys.stderr)
         sys.exit(1)
         
-    master_prompt = build_prompt(objects_df, morphisms_df)
+    existing_citation_keys = set(papers_df['CitationKey'])
 
     for pdf_path in pdf_files:
         if not os.path.exists(pdf_path):
             print(f"Warning: Skipping non-existent file '{pdf_path}'", file=sys.stderr)
             continue
+        
+        print(f"\n--- Processing: {os.path.basename(pdf_path)} ---")
+        
+        pdf_base64 = pdf_to_base64(pdf_path)
+        if not pdf_base64: continue
 
-        extracted_data = analyze_pdf_with_gemini(pdf_path, master_prompt, api_key)
+        # Perform the full analysis for every file. This is the only API call.
+        extracted_data = get_full_analysis(pdf_base64, objects_df, morphisms_df, api_key)
         
-        if extracted_data:
-            update_database_files(extracted_data, paths)
+        if not extracted_data:
+            print(f"  - Analysis failed for '{pdf_path}'. Skipping.")
+            time.sleep(2) # API buffer
+            continue
+
+        # Now, check if the paper already exists based on the analysis results.
+        bib_info = extracted_data.get('bibliographic', {})
+        citation_key = create_citation_key(bib_info.get('authors'), bib_info.get('year'))
+
+        if not citation_key:
+            print(f"  - Could not generate a valid citation key from analysis results. Skipping.")
+            continue
+
+        if citation_key in existing_citation_keys:
+            print(f"  - Skipping '{citation_key}'. Already exists in database.")
+        else:
+            # If it's a new paper, update all relevant files.
+            print(f"  - New paper detected ('{citation_key}'). Updating database...")
+            update_database_files(extracted_data, paths, citation_key)
+            # Add the new key to our set to prevent re-processing in this same run
+            existing_citation_keys.add(citation_key)
         
-        # Be respectful to the API
-        time.sleep(2)
+        time.sleep(2) # API buffer
 
 if __name__ == "__main__":
     main()
