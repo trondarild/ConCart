@@ -143,8 +143,26 @@ def update_database_files(data: Dict[str, Any], paths: Dict[str, str], citation_
         # 1. Update papers.csv
         papers_df = pd.read_csv(paths['papers'])
         bib_info = data.get('bibliographic', {})
-        new_paper = pd.DataFrame([{'CitationKey': citation_key, **bib_info, 'URL': pd.NA}])
-        papers_df = pd.concat([papers_df, new_paper], ignore_index=True)
+
+        # FIX: Create a dictionary with keys that exactly match the columns
+        # in the papers.csv file to prevent concatenation errors.
+        new_row_data = {
+            'CitationKey': citation_key,
+            'Authors': bib_info.get('authors'),
+            'Year': bib_info.get('year'),
+            'Title': bib_info.get('title'),
+            'Publication': bib_info.get('publication'),
+            'URL': pd.NA
+        }
+        
+        # Create a new DataFrame from the single row dictionary
+        new_paper_df = pd.DataFrame([new_row_data])
+
+        # Concatenate the new row. Pandas will align columns by name
+        # and fill missing ones (like TheoryCategory) with NaN automatically.
+        papers_df = pd.concat([papers_df, new_paper_df], ignore_index=True)
+        
+        # Write back to CSV
         papers_df.to_csv(paths['papers'], index=False)
         print(f"  + Added '{citation_key}' to papers.csv")
 
@@ -169,7 +187,9 @@ def update_database_files(data: Dict[str, Any], paths: Dict[str, str], citation_
             # Create a unique key to prevent duplicates
             new_ev_df['unique_key'] = new_ev_df['CitationKey'] + new_ev_df['SourceID'] + new_ev_df['MorphismID'] + new_ev_df['TargetID']
             if not evidence_df.empty:
-                evidence_df['unique_key'] = evidence_df['CitationKey'] + evidence_df['SourceID'] + evidence_df['MorphismID'] + evidence_df['TargetID']
+                # Ensure unique_key column exists before trying to access it
+                if 'unique_key' not in evidence_df.columns:
+                    evidence_df['unique_key'] = evidence_df['CitationKey'] + evidence_df['SourceID'] + evidence_df['MorphismID'] + evidence_df['TargetID']
                 new_ev_df = new_ev_df[~new_ev_df['unique_key'].isin(evidence_df['unique_key'])]
             
             if not new_ev_df.empty:
