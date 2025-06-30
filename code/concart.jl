@@ -5,7 +5,7 @@ This module is intended to be included and used by a frontend, such as a TUI or 
 =#
 module ConCart
 
-export initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, LabeledConsciousnessGraph
+export subpart, initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, LabeledConsciousnessGraph
 
 using Catlab.CategoricalAlgebra
 using Catlab.Presentations

@@ -25,6 +25,7 @@ end
 # Include the core library
 include("concart.jl")
 using .ConCart
+using DataFrames
 
 # --- Display Functions (The "View" Layer) ---
 

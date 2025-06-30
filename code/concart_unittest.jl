@@ -123,7 +123,22 @@ end
         @test !isnothing(err)
         @test isnothing(connections)
     end
+    @testset "subpart basic functionality" begin
+        # Create a minimal category with one object and one morphism
+        cat = LabeledConsciousnessGraph{String, String, String, String, String, String}()
+        v_idx = add_part!(cat, :V; obj_id="O1", obj_name="TestObj", obj_type="TestType")
+        e_idx = add_part!(cat, :E; src=v_idx, tgt=v_idx, morph_id="M1", citation="C1", notes="N1")
 
+        # Test subpart for object attributes
+        @test subpart(cat, v_idx, :obj_name) == "TestObj"
+        @test subpart(cat, v_idx, :obj_type) == "TestType"
+
+        # Test subpart for morphism attributes
+        @test subpart(cat, e_idx, :morph_id) == "M1"
+        @test subpart(cat, e_idx, :citation) == "C1"
+        @test subpart(cat, e_idx, :src) == v_idx
+        @test subpart(cat, e_idx, :tgt) == v_idx
+    end
 end
 
 println("\nConCart tests completed successfully!")
