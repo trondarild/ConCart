@@ -304,29 +304,29 @@ function main()
     C_Consciousness = build_category(objects_df, evidence_df)
     println("Category built successfully with $(nparts(C_Consciousness, :V)) objects and $(nparts(C_Consciousness, :E)) morphisms.")
 
-    println("\n==Example 1: Find lenses matching the classic Theory -> Phenomenon pattern==")
-    viewpoint1 = ["Theory", "Phenomenon"]
-    lenses1 = find_lenses(C_Consciousness, viewpoint1)
-    println("Found $(length(lenses1)) lenses matching the pattern.")
-    for lens in lenses1
-        display_lens(C_Consciousness, lens, morphisms_df)
-    end
- 
-    println("\n==Example 2: Find how theories critique each other==")
-    viewpoint2 = ["Theory", "Theory"]
-    lenses2 = find_lenses(C_Consciousness, viewpoint2)
-    println("Found $(length(lenses2)) lenses matching the pattern.")
-    for lens in lenses2
-        display_lens(C_Consciousness, lens, morphisms_df)
-    end
+    # println("\n==Example 1: Find lenses matching the classic Theory -> Phenomenon pattern==")
+    # viewpoint1 = ["Theory", "Phenomenon"]
+    # lenses1 = find_lenses(C_Consciousness, viewpoint1)
+    # println("Found $(length(lenses1)) lenses matching the pattern.")
+    # for lens in lenses1
+    #     display_lens(C_Consciousness, lens, morphisms_df)
+    # end
+ # 
+    # println("\n==Example 2: Find how theories critique each other==")
+    # viewpoint2 = ["Theory", "Theory"]
+    # lenses2 = find_lenses(C_Consciousness, viewpoint2)
+    # println("Found $(length(lenses2)) lenses matching the pattern.")
+    # for lens in lenses2
+    #     display_lens(C_Consciousness, lens, morphisms_df)
+    # end
 
     # --- Example 3: Find all direct connections FROM a specific object ---
-    specific_object_name = "Structuralist Theories of Consciousness"
+    specific_object_name = "Categorical Framework"
     find_connections_from_object(C_Consciousness, specific_object_name, morphisms_df)
 
     # --- NEW: Example 4: Find all direct connections TO a specific object ---
-    specific_object_name_to = "Neural Correlates of Consciousness (NCC)"
-    find_connections_to_object(C_Consciousness, specific_object_name_to, morphisms_df)
+    # specific_object_name_to = "Neural Correlates of Consciousness (NCC)"
+    # find_connections_to_object(C_Consciousness, specific_object_name_to, morphisms_df)
 
 end
 
