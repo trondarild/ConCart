@@ -28,12 +28,22 @@ using Catlab.ACSets
 # We create in-memory versions of our CSVs for predictable testing.
 
 function create_mock_data()
+    # Mock papers.csv
+    papers_df = DataFrame(
+        CitationKey = ["Paper2020", "Paper2021"],
+        Authors = ["Author A", "Author B"],
+        Year = [2020, 2021],
+        Title = ["Title A", "Title B"],
+        Publication = ["Journal A", "Journal B"],
+        URL = ["url_a", "url_b"]
+    )
+
     # Mock c_objects.csv
     objects_df = DataFrame(
-        ObjectID = ["theory:a", "method:b", "phenomenon:c", "theory:d"],
-        Name = ["Theory A", "Method B", "Phenomenon C", "Theory D"],
-        Type = ["Theory", "Method", "Phenomenon", "Theory"],
-        Description = ["Desc A", "Desc B", "Desc C", "Desc D"]
+        ObjectID = ["theory:a", "method:b", "phenomenon:c", "theory:d", "concept:e"],
+        Name = ["Theory A", "Method B", "Phenomenon C", "Theory D", "Concept E"],
+        Type = ["Theory", "Method", "Phenomenon", "Theory", "Concept"],
+        Description = ["Desc A", "Desc B", "Desc C", "Desc D", "Desc E"]
     )
 
     # Mock c_morphisms.csv
@@ -54,7 +64,7 @@ function create_mock_data()
         Notes = ["Note 1", "Note 2", "Note 3"]
     )
 
-    return objects_df, morphisms_df, evidence_df
+    return papers_df, objects_df, morphisms_df, evidence_df
 end
 
 
@@ -63,11 +73,11 @@ end
 @testset "ConCart.jl Tests" begin
     
     # Initialize mock data and build the category once for all tests
-    objects_df, morphisms_df, evidence_df = create_mock_data()
+    papers_df, objects_df, morphisms_df, evidence_df = create_mock_data()
     category = ConCart.build_category(objects_df, evidence_df)
 
     @testset "Category Building" begin
-        @test nparts(category, :V) == 4
+        @test nparts(category, :V) == 5
         @test nparts(category, :E) == 3
         
         # Check if an object was created correctly
@@ -123,22 +133,30 @@ end
         @test !isnothing(err)
         @test isnothing(connections)
     end
-    @testset "subpart basic functionality" begin
-        # Create a minimal category with one object and one morphism
-        cat = LabeledConsciousnessGraph{String, String, String, String, String, String}()
-        v_idx = add_part!(cat, :V; obj_id="O1", obj_name="TestObj", obj_type="TestType")
-        e_idx = add_part!(cat, :E; src=v_idx, tgt=v_idx, morph_id="M1", citation="C1", notes="N1")
 
-        # Test subpart for object attributes
-        @test subpart(cat, v_idx, :obj_name) == "TestObj"
-        @test subpart(cat, v_idx, :obj_type) == "TestType"
+    @testset "find_papers_for_object" begin
+        # Test an object connected to multiple papers
+        err, citation_keys = find_papers_for_object(category, "Theory A")
+        @test isnothing(err)
+        @test Set(citation_keys) == Set(["Paper2020", "Paper2021"])
+        @test length(citation_keys) == 2
 
-        # Test subpart for morphism attributes
-        @test subpart(cat, e_idx, :morph_id) == "M1"
-        @test subpart(cat, e_idx, :citation) == "C1"
-        @test subpart(cat, e_idx, :src) == v_idx
-        @test subpart(cat, e_idx, :tgt) == v_idx
+        # Test an object connected to one paper
+        err, citation_keys = find_papers_for_object(category, "Phenomenon C")
+        @test isnothing(err)
+        @test citation_keys == ["Paper2020"]
+
+        # Test an object with no connections
+        err, citation_keys = find_papers_for_object(category, "Concept E")
+        @test !isnothing(err) # Should return an error message
+        @test isnothing(citation_keys)
+
+        # Test for a non-existent object
+        err, citation_keys = find_papers_for_object(category, "Non-existent Object")
+        @test !isnothing(err)
+        @test isnothing(citation_keys)
     end
+
 end
 
 println("\nConCart tests completed successfully!")

@@ -5,7 +5,7 @@ This module is intended to be included and used by a frontend, such as a TUI or 
 =#
 module ConCart
 
-export subpart, initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, LabeledConsciousnessGraph
+export subpart, initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, find_papers_for_object, LabeledConsciousnessGraph
 
 using Catlab.CategoricalAlgebra
 using Catlab.Presentations
@@ -55,15 +55,19 @@ C_Consciousness category object.
 
 Returns a tuple containing:
 - The main category ACSet.
-- The morphisms DataFrame (for easy label lookups).
+- The papers DataFrame.
+- The objects DataFrame.
+- The morphisms DataFrame.
 """
 function initialize_database(data_dir::String)
     # Load DataFrames
+    papers_path = joinpath(data_dir, "papers.csv")
     objects_path = joinpath(data_dir, "c_objects.csv")
     morphisms_path = joinpath(data_dir, "c_morphisms.csv")
     evidence_path = joinpath(data_dir, "c_evidence.csv")
 
     try
+        papers_df = CSV.read(papers_path, DataFrame)
         objects_df = CSV.read(objects_path, DataFrame)
         morphisms_df = CSV.read(morphisms_path, DataFrame)
         evidence_df = CSV.read(evidence_path, DataFrame)
@@ -73,7 +77,7 @@ function initialize_database(data_dir::String)
         category = build_category(objects_df, evidence_df)
         println("Category built successfully with $(nparts(category, :V)) objects and $(nparts(category, :E)) morphisms.")
         
-        return category, morphisms_df
+        return category, papers_df, objects_df, morphisms_df
 
     catch e
         if e isa SystemError
@@ -187,6 +191,31 @@ function find_connections_to_object(category, object_name::String)
         return "Object with name '$object_name' not found in the category.", nothing
     end
     return nothing, incident(category, object_indices[1], :tgt)
+end
+
+"""
+    find_papers_for_object(category, object_name::String)
+
+Finds all papers associated with a given object, either as a source or target of a morphism.
+"""
+function find_papers_for_object(category, object_name::String)
+    object_indices = findall(c -> c == object_name, subpart(category, :obj_name))
+    if isempty(object_indices)
+        return "Object with name '$object_name' not found in the category.", nothing
+    end
+    object_idx = object_indices[1]
+
+    incoming_edges = incident(category, object_idx, :tgt)
+    outgoing_edges = incident(category, object_idx, :src)
+    
+    all_edges = vcat(incoming_edges, outgoing_edges)
+    if isempty(all_edges)
+        return "No papers found associated with '$object_name'.", nothing
+    end
+
+    # Get unique citation keys from all associated edges
+    citation_keys = unique(subpart(category, all_edges, :citation))
+    return nothing, citation_keys
 end
 
 end # module ConCart
