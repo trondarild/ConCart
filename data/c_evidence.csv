@@ -80,3 +80,12 @@ EvidenceID,CitationKey,SourceID,MorphismID,TargetID,Notes
 179,Evans2003,concept:total_consciousness,rel:relies_on,concept:emotion,Total consciousness requires emotion.
 180,Evans2003,concept:total_consciousness,rel:relies_on,concept:self_awareness,Total consciousness requires self-awareness.
 181,Evans2003,theory:gnwt,rel:relies_on,concept:attention,Mentions the global workspace theory in relation to attention.
+182,Pin2021,method:theory_comparison,rel:probes,concept:theoretical_comparison,The method aims to ensure meaningful comparisons between theories.
+183,Pin2021,method:formulating_multiple_hypotheses,rel:is_a,method:theory_comparison,Formulating multiple hypotheses is a method for theory comparison.
+184,Pin2021,method:strong_inference,rel:is_a,method:theory_comparison,Strong Inference is a method for theory comparison.
+185,Pin2021,theory:iit,rel:is_incompatible_with,theory:gnwt,IIT and GNW are different theories of consciousness that can be compared.
+186,Pin2021,method:strong_inference,rel:uses_method,method:experimental_design,Strong inference uses experimental design to test hypotheses.
+187,Pin2021,theory:recurrent_processing_theory,rel:explains,phenomenon:visual_processing,Recurrent Processing Theory explains visual processing.
+188,Pin2021,theory:gnwt,rel:explains,phenomenon:access_consciousness,Global Neuronal Workspace Theory explains access consciousness.
+189,Pin2021,theory:iit,rel:explains,phenomenal_consciousness,Integrated Information Theory explains phenomenal consciousness.
+190,Pin2021,concept:essential_positions,rel:defines,theory:categorical_framework,Essential positions can help define a categorical framework for consciousness theories.

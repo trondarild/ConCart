@@ -103,3 +103,8 @@ theory:arousal_inhibitory_mechanism,Arousal Inhibitory Mechanism,Theory,An arous
 phenomenon:cyclical_alternating_pattern,Cyclical Alternating Pattern,Phenomenon,"At sleep onset in the human brain, periodic arousal changes have long been recognised, referred to as the cyclical alternating pattern (CAP)."
 concept:total_consciousness,Total Consciousness,Concept,"Total consciousness is defined as continuous awareness of the external and internal environment, both past and present, together with the emotions arising from it."
 theory:thalamo_cortical_integrating_mechanism,Thalamo-cortical Integrating Mechanism,Theory,The electrical activity of the brain may arise from a global mechanism in the thalamus and cortex.
+method:theory_comparison,Theory Comparison,Method,"A method for comparing theories of consciousness to ensure meaningful comparisons, focusing on parallel or contrasting predictions."
+concept:theoretical_comparison,Theoretical Comparison,Concept,The act of comparing different theories to determine which best predicts and explains empirical data.
+method:formulating_multiple_hypotheses,Formulating Multiple Hypotheses,Method,A method involving the creation of multiple alternative hypotheses to account for a phenomenon.
+method:strong_inference,Strong Inference,Method,"A formal approach to operationalize a theory, test it, and compare it to alternative views."
+concept:essential_positions,Essential Positions,Concept,Core features or criteria that a theory of consciousness should account for.
