@@ -3,17 +3,18 @@ This script provides a Terminal User Interface (TUI) for interacting with the
 Consciousness Cartography database.
 
 It uses the `concart.jl` library for its core logic and `Term.jl`
-for creating a rich, interactive user experience in the terminal.
+for creating a rich, interactive user experience in the terminal. It now
+includes a self-contained command history feature.
 
 To Run:
 1. Ensure `concart.jl` is in the same directory.
 2. Ensure the data files are in `../data/`.
-3. From the Julia REPL, install Term.jl:
+3. From the Julia REPL, install dependencies:
    (press `]`) pkg> add Term
 4. Run the script: `julia tui.jl`
 =#
 
-# Add Term.jl if not already installed
+# Add necessary packages if not already installed
 try
     using Term
 catch e
@@ -22,11 +23,12 @@ catch e
     using Term
 end
 
-# Include the core library
+# Include the core library and other necessary modules
 include("concart.jl")
 using .ConCart
 using DataFrames
 using CSV
+
 # --- Display Functions (The "View" Layer) ---
 
 function display_lens(category, lens_path::Vector, morphisms_df)
@@ -135,9 +137,7 @@ function display_help()
     {bold}Available Commands:{/bold}
 
     • {cyan}find_lens {yellow}<Step1> <Step2> ...{/yellow}
-      {dim}Finds paths. A step can be a {bold}Type{/bold} (e.g., Theory),{/dim}
-      {dim}a specific {bold}"Object Name"{/bold}, or a {bold}wildcard (*){/bold}.{/dim}
-      {dim}e.g., find_lens "Qualia" * Method{/dim}
+      {dim}Finds paths. A step can be a {bold}Type{/bold}, a {bold}"Name"{/bold}, or a {bold}wildcard (*){/bold}.{/dim}
 
     • {cyan}from {yellow}"<Object Name>"{/yellow}
       {dim}Shows all outgoing connections from an object.{/dim}
@@ -146,18 +146,19 @@ function display_help()
       {dim}Shows all incoming connections to an object.{/dim}
 
     • {cyan}list {yellow}<type>{/yellow}
-      {dim}Lists all items of a given type. Types can be:{/dim}
-      {dim}papers, objects, theories, phenomena, methods, concepts, morphisms{/dim}
+      {dim}Lists items. Types: papers, objects, theories, phenomena, etc.{/dim}
 
     • {cyan}info {yellow}<type> "<Name>"{/yellow}
-      {dim}Shows details for a specific item.{/dim}
-      {dim}e.g., info object "IIT" or info paper "Crick1998"{/dim}
+      {dim}Shows details for an item. e.g., info object "IIT"{/dim}
 
     • {cyan}papers_for {yellow}"<Object Name>"{/yellow}
       {dim}Lists all papers associated with a given object.{/dim}
 
-    • {cyan}help{/cyan}{dim}   - Shows this help message.{/dim}
-    • {cyan}quit{/cyan}{dim}   - Exits the application.{/dim}
+    • {cyan}history{/cyan}{dim} - Shows command history.{/dim}
+    • {cyan}!!{/cyan}{dim}      - Executes the last command.{/dim}
+    • {cyan}!n{/cyan}{dim}      - Executes the nth command from history.{/dim}
+    • {cyan}help{/cyan}{dim}    - Shows this help message.{/dim}
+    • {cyan}quit{/cyan}{dim}    - Exits the application.{/dim}
     """
     print(Term.Panel(
         Term.RenderableText(help_text),
@@ -173,33 +174,67 @@ end
 function main_repl_loop(category, papers_df, objects_df, morphisms_df)
     print(Term.Panel(
         "{bold green}Welcome to the Consciousness Cartography TUI{/bold green}",
-        subtitle="Type 'help' for commands",
+        subtitle="Type 'help' for commands or 'quit' to exit.",
         style="bold green",
         width=80
     ))
+
+    history = String[]
 
     while true
         print(Term.RenderableText("\n{bold magenta}cartography> {/bold magenta}"))
         input = readline()
 
+        # Handle history execution commands first
+        if startswith(input, "!")
+            original_input = input
+            if input == "!!" && !isempty(history)
+                input = last(history)
+                println(Term.RenderableText("{dim}Executing: $input{/dim}"))
+            elseif length(input) > 1
+                try
+                    idx = parse(Int, input[2:end])
+                    if 1 <= idx <= length(history)
+                        input = history[idx]
+                        println(Term.RenderableText("{dim}Executing: $input{/dim}"))
+                    else
+                        print(Term.Panel("Invalid history index: $idx", style="bold red", title="Error"))
+                        continue
+                    end
+                catch
+                    print(Term.Panel("Invalid history command: $original_input", style="bold red", title="Error"))
+                    continue
+                end
+            else
+                print(Term.Panel("Invalid history command: $original_input", style="bold red", title="Error"))
+                continue
+            end
+        end
+
+        # Add non-empty, non-history commands to history
+        if !isempty(input) && !startswith(input, "!")
+            push!(history, input)
+        end
+
         parts = [m.match for m in eachmatch(r"\"(.*?)\"|(\S+)", input)]
-        parts = [replace(p, "\""=>"") for p in parts]
-
         if isempty(parts) continue end
-
         command = lowercase(parts[1])
 
         type_map = Dict(
-            "theories" => "Theory",
-            "phenomena" => "Phenomenon",
-            "methods" => "Method",
-            "concepts" => "Concept"
+            "theories" => "Theory", "phenomena" => "Phenomenon",
+            "methods" => "Method", "concepts" => "Concept"
         )
+
         if command == "quit"
-            print(Term.RenderableText("{yellow}Exiting. Goodbye!{/yellow}"))
+            print(Term.RenderableText("{yellow}Exiting. Goodbye!{/yellow}\n"))
             break
         elseif command == "help"
             display_help()
+        elseif command == "history"
+            println(Term.RenderableText("\nCommand History", style="bold cyan"))
+            for (i, cmd) in enumerate(history)
+                println(Term.RenderableText(" {bold white}$i{/bold white}  $cmd"))
+            end
         elseif command == "find_lens" && length(parts) > 2
             pattern = String.(parts[2:end])
             lenses = find_lenses(category, pattern)
@@ -256,7 +291,10 @@ function main_repl_loop(category, papers_df, objects_df, morphisms_df)
                 display_table(associated_papers, "Associated Papers for $object_name")
             end
         else
-            print(Term.Panel("Unknown command or incorrect arguments. Type 'help' for options.", style="bold red", title="Error"))
+            # Avoid showing error for blank input or history commands
+            if !isempty(input)
+                print(Term.Panel("Unknown command or incorrect arguments. Type 'help' for options.", style="bold red", title="Error"))
+            end
         end
     end
 end
