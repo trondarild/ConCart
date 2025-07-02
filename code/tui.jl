@@ -149,7 +149,7 @@ function display_help()
       {dim}Shows all incoming connections to an object.{/dim}
 
     • {cyan}list {yellow}<type>{/yellow}
-      {dim}Lists items. Types: papers, objects, theories, phenomena, etc.{/dim}
+      {dim}Lists items. Types: papers, objects, morphisms, theories, phenomena, etc.{/dim}
 
     • {cyan}info {yellow}<type> "<Name>"{/yellow}
       {dim}Shows details for an item. e.g., info object "IIT"{/dim}

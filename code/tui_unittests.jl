@@ -146,6 +146,17 @@ end
         @test occursin("papers_for", output)
     end
 
+    @testset "list morphisms" begin
+        output = capture_output() do
+            display_table(morphisms_df, "All Morphism Types")
+        end
+
+        @test occursin("All Morphism Types", output)
+        @test occursin("MorphismID", output) # Header
+        @test occursin("rel:uses_method", output)   # Row data
+        @test occursin("critiques", output)   # Row data
+    end
+
     @testset "Wildcard Lenses" begin
         # Test a pattern with a wildcard in the middle
         pattern1 = ["Theory A", "*", "Phenomenon C"]
