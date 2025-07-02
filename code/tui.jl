@@ -152,7 +152,7 @@ function display_help()
       {dim}Lists items. Types: papers, objects, morphisms, theories, phenomena, etc.{/dim}
 
     • {cyan}info {yellow}<type> "<Name>"{/yellow}
-      {dim}Shows details for an item. e.g., info object "IIT"{/dim}
+      {dim}Shows details for an item. e.g., info object "IIT", info morphism "critiques"{/dim}
 
     • {cyan}papers_for {yellow}"<Object Name>"{/yellow}
       {dim}Lists all papers associated with a given object.{/dim}
@@ -285,6 +285,9 @@ function main_repl_loop(category, papers_df, objects_df, morphisms_df)
             elseif info_type == "paper"
                 record = filter(row -> row.CitationKey == name, papers_df)
                 if !isempty(record) display_record(first(record), "Paper Info: $name") else print(Term.Panel("Paper not found.", style="red")) end
+            elseif info_type == "morphism"
+                record = filter(row -> row.Label == name, morphisms_df)
+                if !isempty(record) display_record(first(record), "Morphism Info: $name") else print(Term.Panel("Morphism not found.", style="red")) end
             else println(Term.Panel("Unknown info type: $info_type", style="red"))
             end
         elseif command == "papers_for" && length(parts) > 1

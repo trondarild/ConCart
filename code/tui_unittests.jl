@@ -134,6 +134,20 @@ end
         @test occursin("2020", output)
     end
 
+    @testset "display_morphism_record" begin
+        morphism_record = first(filter(row -> row.Label == "critiques", morphisms_df))
+        
+        output = capture_output() do
+            display_record(morphism_record, "Test Morphism Record")
+        end
+
+        @test occursin("Test Morphism Record", output)
+        @test occursin("MorphismID:", output)
+        @test occursin("rel:critiques", output)
+        @test occursin("Label:", output)
+        @test occursin("critiques", output)
+    end
+
     @testset "display_help" begin
         output = capture_output() do
             display_help()
