@@ -128,23 +128,49 @@ function build_category(objects_df, evidence_df)
 end
 
 """
-    find_lenses(category, pattern::Vector{String})
+    find_lenses(category, pattern::Vector{String}, morphisms_df)
 
 Finds all paths in the category that match a given structural pattern.
-The pattern can be a mix of object Types (e.g., "Theory"), specific
-object Names (e.g., "Qualia"), or wildcards ("*").
+The pattern can be a mix of object specifiers (Types, Names, "*") and
+morphism specifiers (e.g., "<label>", "*").
 """
-function find_lenses(category, pattern::Vector{String})
-    if length(pattern) < 2
-        error("Lens pattern must have at least two steps (e.g., A -> B).")
+function find_lenses(category, pattern::Vector{String}, morphisms_df)
+    # A pattern is object-only if it contains no morphism specifiers like "<label>"
+    is_object_only_pattern = !any(p -> startswith(p, "<"), pattern)
+
+    # If the pattern is object-only, we treat all elements as object specifiers
+    # and insert wildcard morphisms between them.
+    if is_object_only_pattern
+        new_pattern = String[]
+        for i in 1:length(pattern)
+            push!(new_pattern, pattern[i])
+            if i < length(pattern)
+                push!(new_pattern, "*") # Insert wildcard morphism
+            end
+        end
+        pattern = new_pattern
+    end
+
+    if isodd(length(pattern)) == false
+        error("Lens pattern must have an odd number of elements (Object, Morphism, Object, ...). Processed pattern: $(pattern)")
     end
 
     valid_types = Set(["Theory", "Phenomenon", "Method", "Concept"])
     found_lenses = []
 
+    # Helper function to check if a node matches an object specifier
+    function node_matches(node_idx, specifier)
+        if specifier == "*" return true end
+        is_type = specifier in valid_types
+        return if is_type
+            subpart(category, node_idx, :obj_type) == specifier
+        else
+            subpart(category, node_idx, :obj_name) == specifier
+        end
+    end
+
     # Recursive helper function to find paths
     function find_paths_recursive(current_node_idx::Int, pattern_slice::Vector{String}, path_so_far::Vector{Int})
-        # Base case: if the pattern slice is empty, we have successfully completed a path.
         if isempty(pattern_slice)
             if !isempty(path_so_far)
                 push!(found_lenses, copy(path_so_far))
@@ -152,53 +178,36 @@ function find_lenses(category, pattern::Vector{String})
             return
         end
 
-        next_step_pattern = pattern_slice[1]
-        remaining_pattern = pattern_slice[2:end]
+        morphism_spec = pattern_slice[1]
+        next_obj_spec = pattern_slice[2]
+        remaining_pattern = pattern_slice[3:end]
 
-        # Find all outgoing edges from the current node
         outgoing_edges = incident(category, current_node_idx, :src)
 
         for edge_idx in outgoing_edges
+            # Filter by morphism
+            morphism_id = subpart(category, edge_idx, :morph_id)
+            morphism_label_rows = filter(row -> row.MorphismID == morphism_id, morphisms_df)
+            if isempty(morphism_label_rows) continue end
+            morphism_label = morphism_label_rows[1, :Label]
+            
+            morphism_matches = (morphism_spec == "*" || morphism_spec == "<$(morphism_label)>")
+            if !morphism_matches continue end
+
+            # Filter by target object
             target_node_idx = subpart(category, edge_idx, :tgt)
-            new_path = vcat(path_so_far, edge_idx)
-
-            if next_step_pattern == "*"
-                # Wildcard: this step matches any node. Continue search from the target node.
+            if node_matches(target_node_idx, next_obj_spec)
+                new_path = vcat(path_so_far, edge_idx)
                 find_paths_recursive(target_node_idx, remaining_pattern, new_path)
-            else
-                # Specific match (Type or Name)
-                is_type_match = next_step_pattern in valid_types
-                target_matches = if is_type_match
-                    subpart(category, target_node_idx, :obj_type) == next_step_pattern
-                else
-                    subpart(category, target_node_idx, :obj_name) == next_step_pattern
-                end
-
-                if target_matches
-                    find_paths_recursive(target_node_idx, remaining_pattern, new_path)
-                end
             end
         end
     end
 
-    # Start the search from all nodes that match the *first* step of the pattern.
-    first_step_pattern = pattern[1]
-    rest_of_pattern = pattern[2:end]
-    
-    start_nodes = if first_step_pattern == "*"
-        1:nparts(category, :V) # Start from all nodes if the first step is a wildcard
-    else
-        is_first_step_type = first_step_pattern in valid_types
-        findall(v_idx -> if is_first_step_type
-                subpart(category, v_idx, :obj_type) == first_step_pattern
-            else
-                subpart(category, v_idx, :obj_name) == first_step_pattern
-            end, 1:nparts(category, :V))
-    end
+    start_obj_spec = pattern[1]
+    start_nodes = findall(v -> node_matches(v, start_obj_spec), 1:nparts(category, :V))
 
     for v_idx in start_nodes
-        # FIX: Initialize the path with a typed empty vector `Int64[]` instead of `[]`.
-        find_paths_recursive(v_idx, rest_of_pattern, Int64[])
+        find_paths_recursive(v_idx, pattern[2:end], Int64[])
     end
 
     return found_lenses

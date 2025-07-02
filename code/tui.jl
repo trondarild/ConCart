@@ -137,7 +137,10 @@ function display_help()
     {bold}Available Commands:{/bold}
 
     • {cyan}find_lens {yellow}<Step1> <Step2> ...{/yellow}
-      {dim}Finds paths. A step can be a {bold}Type{/bold}, a {bold}"Name"{/bold}, or a {bold}wildcard (*){/bold}.{/dim}
+      {dim}Finds paths. A step can be an {bold}object{/bold} (Type or "Name") or a{/dim}
+      {dim}{bold}morphism{/bold} (e.g., <critiques>). Object-only queries are still supported.{/dim}
+      {dim}e.g., find_lens * <critiques> *{/dim}
+      {dim}e.g., find_lens "IIT" Method{/dim}
 
     • {cyan}from {yellow}"<Object Name>"{/yellow}
       {dim}Shows all outgoing connections from an object.{/dim}
@@ -216,7 +219,9 @@ function main_repl_loop(category, papers_df, objects_df, morphisms_df)
             push!(history, input)
         end
 
-        parts = [m.match for m in eachmatch(r"\"(.*?)\"|(\S+)", input)]
+        parts = [m.match for m in eachmatch(r"<([^>]+)>|\"(.*?)\"|(\S+)", input)]
+        parts = [replace(p, "\""=>"") for p in parts]
+
         if isempty(parts) continue end
         command = lowercase(parts[1])
 
@@ -237,7 +242,7 @@ function main_repl_loop(category, papers_df, objects_df, morphisms_df)
             end
         elseif command == "find_lens" && length(parts) > 2
             pattern = String.(parts[2:end])
-            lenses = find_lenses(category, pattern)
+            lenses = find_lenses(category, pattern, morphisms_df)
             println("\nFound $(length(lenses)) lenses matching the pattern [$(join(pattern, " -> "))].")
             for lens in lenses
                 display_lens(category, lens, morphisms_df)

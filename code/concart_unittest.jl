@@ -89,32 +89,32 @@ end
     @testset "find_lenses" begin
         # Test a pattern that should exist and have exactly one result
         pattern_success = ["Theory", "Method", "Phenomenon"]
-        lenses_success = find_lenses(category, pattern_success)
+        lenses_success = find_lenses(category, pattern_success, morphisms_df)
         @test length(lenses_success) == 1
         # A lens path of length 2 has two edges
         @test length(lenses_success[1]) == 2 
 
         # Test a pattern that should not exist
         pattern_fail = ["Phenomenon", "Theory"]
-        lenses_fail = find_lenses(category, pattern_fail)
+        lenses_fail = find_lenses(category, pattern_fail, morphisms_df)
         @test isempty(lenses_fail)
     end
 
     @testset "Mixed Pattern Lenses" begin
         # Test a pattern mixing a specific name and a type
         pattern_mixed_success = ["Theory A", "Method", "Phenomenon"]
-        lenses_mixed_success = find_lenses(category, pattern_mixed_success)
+        lenses_mixed_success = find_lenses(category, pattern_mixed_success, morphisms_df)
         @test length(lenses_mixed_success) == 1
         @test length(lenses_mixed_success[1]) == 2
 
         # Test a pattern mixing a type and a specific name
         pattern_mixed_success_2 = ["Theory", "Method", "Phenomenon C"]
-        lenses_mixed_success_2 = find_lenses(category, pattern_mixed_success_2)
+        lenses_mixed_success_2 = find_lenses(category, pattern_mixed_success_2, morphisms_df)
         @test length(lenses_mixed_success_2) == 1
 
         # Test a mixed pattern that should fail
         pattern_mixed_fail = ["Theory D", "Method"]
-        lenses_mixed_fail = find_lenses(category, pattern_mixed_fail)
+        lenses_mixed_fail = find_lenses(category, pattern_mixed_fail, morphisms_df)
         @test isempty(lenses_mixed_fail)
     end
 
