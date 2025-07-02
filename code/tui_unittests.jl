@@ -43,10 +43,10 @@ function create_mock_data()
 
     # Mock c_objects.csv
     objects_df = DataFrame(
-        ObjectID = ["theory:a", "method:b", "phenomenon:c", "theory:d"],
-        Name = ["Theory A", "Method B", "Phenomenon C", "Theory D"],
-        Type = ["Theory", "Method", "Phenomenon", "Theory"],
-        Description = ["Desc A", "Desc B", "Desc C", "Desc D"]
+        ObjectID = ["theory:a", "method:b", "phenomenon:c", "theory:d", "concept:e"],
+        Name = ["Theory A", "Method B", "Phenomenon C", "Theory D", "Concept E"],
+        Type = ["Theory", "Method", "Phenomenon", "Theory", "Concept"],
+        Description = ["Desc A", "Desc B", "Desc C", "Desc D", "Desc E"]
     )
 
     # Mock c_morphisms.csv
@@ -138,7 +138,27 @@ end
 
         @test occursin("Available Commands", output)
         @test occursin("find_lens", output)
+        @test occursin("wildcard", output)
         @test occursin("papers_for", output)
+    end
+
+    @testset "Wildcard Lenses" begin
+        # Test a pattern with a wildcard in the middle
+        pattern1 = ["Theory A", "*", "Phenomenon C"]
+        lenses1 = find_lenses(category, pattern1)
+        @test length(lenses1) == 1
+        @test length(lenses1[1]) == 2 # Path has two edges
+
+        # Test a pattern starting with a wildcard
+        pattern2 = ["*", "Phenomenon C"]
+        lenses2 = find_lenses(category, pattern2)
+        @test length(lenses2) == 1
+        @test length(lenses2[1]) == 1 # Path has one edge
+
+        # Test a pattern ending with a wildcard
+        pattern3 = ["Theory A", "*"]
+        lenses3 = find_lenses(category, pattern3)
+        @test length(lenses3) == 2
     end
 
 end

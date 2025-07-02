@@ -98,25 +98,19 @@ function display_table(df::DataFrame, title::String)
         return
     end
 
-    # Create a copy to avoid modifying the original DataFrame
     display_df = copy(df)
     
-    # Truncate long strings for better display
     for col_name in names(display_df)
         if eltype(display_df[!, col_name]) <: Union{String, Missing}
             display_df[!, col_name] = [
-                #(s isa String && length(s) > 50) ? s[1:47] * "..." : s 
                 (s isa String && length(s) > 50) ? first(s, 47) * "..." : s
                 for s in display_df[!, col_name]
             ]
         end
     end
     
-    # Print the title separately
     println(Term.RenderableText("\n" * title, style="bold cyan"))
     
-    # FIX: Manually convert the DataFrame to a Matrix and pass the header separately.
-    # This is the most robust way to ensure compatibility with Term.Table.
     header = names(display_df)
     data_matrix = Matrix(display_df)
 
@@ -140,8 +134,10 @@ function display_help()
     help_text = """
     {bold}Available Commands:{/bold}
 
-    • {cyan}find_lens {yellow}<Type1> <Type2> ...{/yellow}
-      {dim}Finds paths matching a sequence of object types.{/dim}
+    • {cyan}find_lens {yellow}<Step1> <Step2> ...{/yellow}
+      {dim}Finds paths. A step can be a {bold}Type{/bold} (e.g., Theory),{/dim}
+      {dim}a specific {bold}"Object Name"{/bold}, or a {bold}wildcard (*){/bold}.{/dim}
+      {dim}e.g., find_lens "Qualia" * Method{/dim}
 
     • {cyan}from {yellow}"<Object Name>"{/yellow}
       {dim}Shows all outgoing connections from an object.{/dim}
@@ -234,9 +230,8 @@ function main_repl_loop(category, papers_df, objects_df, morphisms_df)
             if list_type == "papers" display_table(papers_df, "All Papers")
             elseif list_type == "objects" display_table(objects_df, "All Objects")
             elseif list_type == "morphisms" display_table(morphisms_df, "All Morphism Types")
-            elseif list_type in ["theories", "phenomena", "methods", "concepts"]
-                type_filter = get(type_map, list_type, titlecase(list_type[1:end-1])) # "theories" -> "Theory"
-                # type_filter = titlecase(list_type[1:end-1]) # "theories" -> "Theory"
+            elseif haskey(type_map, list_type)
+                type_filter = type_map[list_type]
                 filtered_df = filter(row -> row.Type == type_filter, objects_df)
                 display_table(filtered_df, "All $(titlecase(list_type))")
             else println(Term.Panel("Unknown list type: $list_type", style="red"))
