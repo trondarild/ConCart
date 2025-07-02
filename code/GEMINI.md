@@ -46,3 +46,22 @@ To model the evolution of scientific claims themselves (not just the claims), a 
     *   **Richer Context:** Captures the dynamics of scientific debate more faithfully than a simple graph.
 *   **Catlab Implementation:** Utilize Catlab's support for double categories, structured cospans, and double-pushout (DPO) rewriting.
 *   **Example Application:** Model a 2023 paper's evidence (`e2`) as a *refinement* of a 2020 paper's evidence (`e1`) for the same claim. This would be represented as a vertical morphism `e1 --[is_refined_by]--> e2`.
+
+---
+### Implementation Philosophy: Database vs. Catlab vs. Inference
+
+It is crucial to understand the division of labor between the components of the system.
+
+*   **The Database (e.g., CSV files) holds the facts.**
+    *   It is the source of ground truth and semantic meaning. It stores the fundamental objects (theories, phenomena) and morphisms (claims, evidence) that exist.
+    *   This is where human-curated knowledge is stored. You could manually add a morphism type like `"is_refined_by"` here.
+
+*   **Catlab.jl computes the consequences.**
+    *   It is a powerful calculator for abstract structures. It takes the facts from the database and computes their logical and structural consequences (e.g., "find all triangular patterns," "calculate the pullback of these two claims").
+    *   It does not understand what a "Theory" is, but it can perfectly execute a query for a pattern you define with that label.
+
+*   **Inference is a hybrid workflow you build on top.**
+    *   To automatically discover new relationships (e.g., to *infer* that one claim refines another), you would create a workflow that uses both Catlab and external logic.
+    *   **Step 1 (Find Candidates):** Use a Catlab categorical query to find all examples in the database that have the *structure* of a potential refinement (e.g., two claims connecting the same two objects made in different years).
+    *   **Step 2 (Validate Semantics):** Use an external tool (like a heuristic, or an LLM via an API call) to check if the candidate pair is a *semantic* refinement.
+    *   **Step 3 (Update Database):** If validated, programmatically add the newly inferred fact back into the database, creating a feedback loop where the system enriches its own knowledge base.
