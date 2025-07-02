@@ -105,7 +105,8 @@ function display_table(df::DataFrame, title::String)
     for col_name in names(display_df)
         if eltype(display_df[!, col_name]) <: Union{String, Missing}
             display_df[!, col_name] = [
-                (s isa String && length(s) > 50) ? s[1:47] * "..." : s 
+                #(s isa String && length(s) > 50) ? s[1:47] * "..." : s 
+                (s isa String && length(s) > 50) ? first(s, 47) * "..." : s
                 for s in display_df[!, col_name]
             ]
         end
