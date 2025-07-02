@@ -192,6 +192,12 @@ function main_repl_loop(category, papers_df, objects_df, morphisms_df)
 
         command = lowercase(parts[1])
 
+        type_map = Dict(
+            "theories" => "Theory",
+            "phenomena" => "Phenomenon",
+            "methods" => "Method",
+            "concepts" => "Concept"
+        )
         if command == "quit"
             print(Term.RenderableText("{yellow}Exiting. Goodbye!{/yellow}"))
             break
@@ -228,7 +234,8 @@ function main_repl_loop(category, papers_df, objects_df, morphisms_df)
             elseif list_type == "objects" display_table(objects_df, "All Objects")
             elseif list_type == "morphisms" display_table(morphisms_df, "All Morphism Types")
             elseif list_type in ["theories", "phenomena", "methods", "concepts"]
-                type_filter = titlecase(list_type[1:end-1]) # "theories" -> "Theory"
+                type_filter = get(type_map, list_type, titlecase(list_type[1:end-1])) # "theories" -> "Theory"
+                # type_filter = titlecase(list_type[1:end-1]) # "theories" -> "Theory"
                 filtered_df = filter(row -> row.Type == type_filter, objects_df)
                 display_table(filtered_df, "All $(titlecase(list_type))")
             else println(Term.Panel("Unknown list type: $list_type", style="red"))
