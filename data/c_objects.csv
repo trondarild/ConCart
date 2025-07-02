@@ -57,15 +57,15 @@ method:neuroimaging,Neuroimaging,Method,"A set of techniques (e.g., fMRI, EEG) u
 method:neuroscience_experiment,Neuroscience Experiment,Method,An experiment involving the direct measurement or manipulation of the nervous system to test a hypothesis.
 method:phenomenology,Phenomenology,Method,A philosophical approach that emphasizes the study of subjective experience and consciousness from a first-person perspective.
 method:psychophysics,Psychophysics,Method,A set of methods that quantitatively investigates the relationship between physical stimuli and the sensations and perceptions they produce.
-concept:attention,Attention,Concept,The cognitive process of selectively concentrating on one aspect of the environment while ignoring other things.
-concept:embodiment,Embodiment,Concept,The role the body plays in shaping the mind and cognitive processes.
-concept:information,Information,Concept,A fundamental concept referring to that which reduces uncertainty; central to many theories of consciousness.
+concept:attention,Attention,Concept,"The cognitive process of selectively concentrating on one aspect of the environment while ignoring other things."
+concept:embodiment,Embodiment,Concept,"The role the body plays in shaping the mind and cognitive processes."
+concept:information,Information,Concept,"A fundamental concept referring to that which reduces uncertainty; central to many theories of consciousness."
 concept:intentionality,Intentionality,Concept,"The property of mental states (e.g., beliefs, desires) of being directed at or about objects or states of affairs in the world."
 concept:mind,Mind,Concept,"The set of faculties including consciousness, perception, thinking, judgment, and memory."
 concept:neural_correlates,Neural Correlates,Concept,The specific patterns of neural activity that are associated with a particular mental state or conscious experience.
 concept:panpsychism,Panpsychism,Concept,"The philosophical view that consciousness, mind, or soul is a universal and primordial feature of all things."
 concept:process_philosophy,Process Philosophy,Concept,A philosophical tradition that emphasizes becoming and dynamics over static being.
-concept:representation,Representation,Concept,An internal cognitive symbol or state that stands for an external reality.
+concept:representation,Representation,Concept,"An internal cognitive symbol or state that stands for an external reality."
 concept:time,Time,Concept,"The indefinite continued progress of existence and events in the past, present, and future regarded as a whole."
 theory:multidimensional_consciousness_model,Multidimensional Model of Consciousness,Theory,"A composite, multilevel, and multidimensional model of consciousness used as a heuristic framework to guide research in artificial consciousness."
 phenomenon:artificial_consciousness,Artificial Consciousness,Phenomenon,Subjective awareness in a human-designed artificial system.
@@ -92,7 +92,7 @@ concept:neuronal_coherence,Neuronal Coherence,Concept,The synchronization of neu
 theory:multiple_generator_hypothesis,Multiple Generator Hypothesis,Theory,The Multiple Generator Hypothesis proposes a distinction between principles and generators of consciousness.
 theory:joint_determinant_theory,Joint Determinant Theory,Theory,"Joint Determinant Theory posits that consciousness is fundamentally pluralistic, and different conscious contents do not rely on one underlying consciousness-generating mechanism."
 theory:integrative_pluralism,Integrative Pluralism,Theory,Integrative Pluralism aims to resolve conflicts between theories using multiple levels of analysis.
-method:measure_centrality_index,Measure Centrality Index,Method,Measure Centrality Index aims to enable fruitful inter-theory classification that systematically can help evaluate and compare theories.
+method:measure_centrality_index,Measure Centrality Index,Method,Measure Centrality Index aims to enable fruitful inter-theory classification that can systematically help evaluate and compare theories.
 method:inference_to_best_explanation,Inference to the Best Explanation,Method,Inference to the Best Explanation is a method of comparing theories based on Bayesian updating and accommodated to track the relations between theories and data.
 method:criteria_based_approach,Criteria-based Approach,Method,"A criteria-based approach evaluates theories against a set of criteria, with the theory that satisfies the most criteria being preferable over the others."
 method:accelerating_research_on_consciousness,Accelerating Research on Consciousness,Method,Accelerating Research on Consciousness deploys a methodology guided by the principle of falsification combined with adversarial collaboration.
@@ -108,3 +108,9 @@ concept:theoretical_comparison,Theoretical Comparison,Concept,The act of compari
 method:formulating_multiple_hypotheses,Formulating Multiple Hypotheses,Method,A method involving the creation of multiple alternative hypotheses to account for a phenomenon.
 method:strong_inference,Strong Inference,Method,"A formal approach to operationalize a theory, test it, and compare it to alternative views."
 concept:essential_positions,Essential Positions,Concept,Core features or criteria that a theory of consciousness should account for.
+theory:philosophy,Philosophical Theories,Theory,"Foundational philosophical arguments and thought experiments concerning the nature of mind and consciousness."
+phenomenon:attention,Attention (as a phenomenon),Phenomenon,"The phenomenal experience of selectively concentrating on one aspect of the environment while ignoring other things."
+concept:memory,Memory,Concept,"The faculty of the brain by which data or information is encoded, stored, and retrieved when needed."
+concept:emotion,Emotion,Concept,"A complex psychological state involving subjective experience, physiological response, and behavioral or expressive response."
+concept:self_awareness,Self-Awareness,Concept,"The capacity for introspection and the ability to recognize oneself as an individual separate from the environment and other individuals."
+phenomenal_consciousness,Phenomenal Consciousness (unprefixed),Phenomenon,"The subjective, experiential quality of mental states; what it is like to have an experience. (Entry to fix evidence file typo)."
