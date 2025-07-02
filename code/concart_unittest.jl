@@ -19,7 +19,7 @@ using DataFrames
 include("concart.jl")
 using .ConCart
 
-# FIX: Bring Catlab functions into the test script's scope
+# Bring Catlab functions into the test script's scope to resolve errors
 using Catlab.CategoricalAlgebra
 using Catlab.ACSets
 
@@ -98,6 +98,24 @@ end
         pattern_fail = ["Phenomenon", "Theory"]
         lenses_fail = find_lenses(category, pattern_fail)
         @test isempty(lenses_fail)
+    end
+
+    @testset "Mixed Pattern Lenses" begin
+        # Test a pattern mixing a specific name and a type
+        pattern_mixed_success = ["Theory A", "Method", "Phenomenon"]
+        lenses_mixed_success = find_lenses(category, pattern_mixed_success)
+        @test length(lenses_mixed_success) == 1
+        @test length(lenses_mixed_success[1]) == 2
+
+        # Test a pattern mixing a type and a specific name
+        pattern_mixed_success_2 = ["Theory", "Method", "Phenomenon C"]
+        lenses_mixed_success_2 = find_lenses(category, pattern_mixed_success_2)
+        @test length(lenses_mixed_success_2) == 1
+
+        # Test a mixed pattern that should fail
+        pattern_mixed_fail = ["Theory D", "Method"]
+        lenses_mixed_fail = find_lenses(category, pattern_mixed_fail)
+        @test isempty(lenses_mixed_fail)
     end
 
     @testset "find_connections_from_object" begin

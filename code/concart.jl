@@ -5,7 +5,7 @@ This module is intended to be included and used by a frontend, such as a TUI or 
 =#
 module ConCart
 
-export subpart, initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, find_papers_for_object, LabeledConsciousnessGraph
+export initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, find_papers_for_object, LabeledConsciousnessGraph, nparts, subpart
 
 using Catlab.CategoricalAlgebra
 using Catlab.Presentations
@@ -131,18 +131,36 @@ end
     find_lenses(category, pattern::Vector{String})
 
 Finds all paths in the category that match a given structural pattern.
+The pattern can be a mix of object Types (e.g., "Theory") and specific
+object Names (e.g., "Qualia").
 """
 function find_lenses(category, pattern::Vector{String})
     if length(pattern) < 2
         error("Lens pattern must have at least two steps (e.g., A -> B).")
     end
 
+    # A predefined set of valid object types for quick lookup
+    valid_types = Set(["Theory", "Phenomenon", "Method", "Concept"])
     found_lenses = []
+
     function find_paths(start_node_idx, pattern_idx, current_path)
-        if subpart(category, start_node_idx, :obj_type) != pattern[pattern_idx]
-            return
+        current_pattern_step = pattern[pattern_idx]
+        
+        # Determine if the pattern step is a Type or a specific Name
+        is_type_match = current_pattern_step in valid_types
+        
+        # Check if the current node matches the pattern step
+        if is_type_match
+            if subpart(category, start_node_idx, :obj_type) != current_pattern_step
+                return # Type mismatch
+            end
+        else # Assume it's a name
+            if subpart(category, start_node_idx, :obj_name) != current_pattern_step
+                return # Name mismatch
+            end
         end
 
+        # Base case: we have found a full path matching the pattern
         if pattern_idx == length(pattern)
             if !isempty(current_path)
                 push!(found_lenses, copy(current_path))
@@ -150,10 +168,22 @@ function find_lenses(category, pattern::Vector{String})
             return
         end
 
+        # Recursive step: find all outgoing edges and continue the search
+        next_pattern_step = pattern[pattern_idx + 1]
+        is_next_type_match = next_pattern_step in valid_types
+
         outgoing_edges = incident(category, start_node_idx, :src)
         for edge_idx in outgoing_edges
             target_node_idx = subpart(category, edge_idx, :tgt)
-            if subpart(category, target_node_idx, :obj_type) == pattern[pattern_idx + 1]
+            
+            # Check if the target node matches the *next* step in the pattern
+            target_matches = if is_next_type_match
+                subpart(category, target_node_idx, :obj_type) == next_pattern_step
+            else
+                subpart(category, target_node_idx, :obj_name) == next_pattern_step
+            end
+
+            if target_matches
                 push!(current_path, edge_idx)
                 find_paths(target_node_idx, pattern_idx + 1, current_path)
                 pop!(current_path)
@@ -161,6 +191,7 @@ function find_lenses(category, pattern::Vector{String})
         end
     end
 
+    # Start the search from every object in the category
     for v_idx in 1:nparts(category, :V)
         find_paths(v_idx, 1, [])
     end
