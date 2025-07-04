@@ -4,10 +4,12 @@ Consciousness Cartography database.
 
 It uses the `concart.jl` library for its core logic and `Term.jl`
 for creating a rich, interactive user experience in the terminal. It now
-includes a self-contained command history feature.
+includes a self-contained command history feature and advanced search
+options for pullbacks and pushouts with wildcard support.
 
 To Run:
-1. Ensure `concart.jl` is in the same directory.
+1. Ensure `concart.jl` is in the same directory and has been updated with
+   the wildcard-enabled pullback/pushout functions.
 2. Ensure the data files are in `../data/`.
 3. From the Julia REPL, install dependencies:
    (press `]`) pkg> add Term
@@ -94,6 +96,67 @@ function display_incoming_connection(category, edge_idx::Int, morphisms_df)
     ))
 end
 
+function get_edge_info(category, edge_idx::Int, morphisms_df)
+    m_id = subpart(category, edge_idx, :morph_id)
+    cit = subpart(category, edge_idx, :citation)
+    m_rows = filter(row -> row.MorphismID == m_id, morphisms_df)
+    m_label = isempty(m_rows) ? "{red}unknown{/red}" : m_rows[1, :Label]
+    return "{italic green}$(m_label){/italic green} {dim}({/dim}{underline cyan}cite: $cit{/underline cyan}{dim}){/dim}"
+end
+
+function display_pullback(category, diagram::Dict, morphisms_df)
+    p_line = "{blue bold}(" * subpart(category, diagram["P_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["P_idx"], :obj_name) * "{/bright_white}"
+    a_line = "{blue bold}(" * subpart(category, diagram["A_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["A_idx"], :obj_name) * "{/bright_white}"
+    b_line = "{blue bold}(" * subpart(category, diagram["B_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["B_idx"], :obj_name) * "{/bright_white}"
+    c_line = "{blue bold}(" * subpart(category, diagram["C_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["C_idx"], :obj_name) * "{/bright_white}"
+
+    pa_info = get_edge_info(category, diagram["p_to_a_edge"], morphisms_df)
+    pb_info = get_edge_info(category, diagram["p_to_b_edge"], morphisms_df)
+    ac_info = get_edge_info(category, diagram["a_to_c_edge"], morphisms_df)
+    bc_info = get_edge_info(category, diagram["b_to_c_edge"], morphisms_df)
+
+    final_text = """
+    Found a pullback square with {yellow}Common Source (P):{/yellow} $p_line
+
+    {dim}Formed by the paths:{/dim}
+    {bold}1:{/bold} $p_line → ($pa_info) → $a_line → ($ac_info) → $c_line
+    {bold}2:{/bold} $p_line → ($pb_info) → $b_line → ($bc_info) → $c_line
+    """
+
+    println(Term.Panel(
+        Term.RenderableText(final_text),
+        title="Found Pullback Candidate",
+        style="cyan",
+        width=120
+    ))
+end
+
+function display_pushout(category, diagram::Dict, morphisms_df)
+    s_line = "{blue bold}(" * subpart(category, diagram["S_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["S_idx"], :obj_name) * "{/bright_white}"
+    a_line = "{blue bold}(" * subpart(category, diagram["A_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["A_idx"], :obj_name) * "{/bright_white}"
+    b_line = "{blue bold}(" * subpart(category, diagram["B_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["B_idx"], :obj_name) * "{/bright_white}"
+    q_line = "{blue bold}(" * subpart(category, diagram["Q_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["Q_idx"], :obj_name) * "{/bright_white}"
+
+    sa_info = get_edge_info(category, diagram["s_to_a_edge"], morphisms_df)
+    sb_info = get_edge_info(category, diagram["s_to_b_edge"], morphisms_df)
+    aq_info = get_edge_info(category, diagram["a_to_q_edge"], morphisms_df)
+    bq_info = get_edge_info(category, diagram["b_to_q_edge"], morphisms_df)
+
+    final_text = """
+    Found a pushout square with {yellow}Common Target (Q):{/yellow} $q_line
+
+    {dim}Formed by the paths:{/dim}
+    {bold}1:{/bold} $s_line → ($sa_info) → $a_line → ($aq_info) → $q_line
+    {bold}2:{/bold} $s_line → ($sb_info) → $b_line → ($bq_info) → $q_line
+    """
+    println(Term.Panel(
+        Term.RenderableText(final_text),
+        title="Found Pushout Candidate",
+        style="yellow",
+        width=120
+    ))
+end
+
 function display_table(df::DataFrame, title::String)
     if isempty(df)
         println(Term.RenderableText("{yellow}No items to display for '$title'.{/yellow}"))
@@ -141,6 +204,14 @@ function display_help()
       {dim}{bold}morphism{/bold} (e.g., <critiques>). Object-only queries are still supported.{/dim}
       {dim}e.g., find_lens * <critiques> *{/dim}
       {dim}e.g., find_lens "IIT" Method{/dim}
+
+    • {cyan}pullback {yellow}"<A>" "<B>" "<C>"{/yellow}
+      {dim}Finds objects P that link to A and B, where A and B link to C.{/dim}
+      {dim}Use '*' as a wildcard for any object. e.g., pullback "IIT" "*" "Theory"{/dim}
+
+    • {cyan}pushout {yellow}"<S>" "<A>" "<B>"{/yellow}
+      {dim}Finds objects Q that A and B both link to, from a common source S.{/dim}
+      {dim}Use '*' as a wildcard for any object. e.g., pushout "IIT" "*" *{/dim}
 
     • {cyan}from {yellow}"<Object Name>"{/yellow}
       {dim}Shows all outgoing connections from an object.{/dim}
@@ -240,12 +311,34 @@ function main_repl_loop(category, papers_df, objects_df, morphisms_df)
             for (i, cmd) in enumerate(history)
                 println(Term.RenderableText(" {bold white}$i{/bold white}  $cmd"))
             end
-        elseif command == "find_lens" && length(parts) > 2
+        elseif command == "find_lens" && length(parts) > 1
             pattern = String.(parts[2:end])
             lenses = find_lenses(category, pattern, morphisms_df)
             println("\nFound $(length(lenses)) lenses matching the pattern [$(join(pattern, " -> "))].")
             for lens in lenses
                 display_lens(category, lens, morphisms_df)
+            end
+        elseif command == "pullback" && length(parts) == 4
+            name_A, name_B, name_C = parts[2], parts[3], parts[4]
+            err, results = find_pullback_candidates(category, name_A, name_B, name_C)
+            if !isnothing(err)
+                print(Term.Panel(err, style="bold red", title="Error"))
+            else
+                println("\nFound $(length(results)) pullback candidate(s) for the span $name_A -> $name_C <- $name_B:")
+                for diagram in results
+                    display_pullback(category, diagram, morphisms_df)
+                end
+            end
+        elseif command == "pushout" && length(parts) == 4
+            name_S, name_A, name_B = parts[2], parts[3], parts[4]
+            err, results = find_pushout_candidates(category, name_S, name_A, name_B)
+            if !isnothing(err)
+                print(Term.Panel(err, style="bold red", title="Error"))
+            else
+                println("\nFound $(length(results)) pushout candidate(s) for the cospan $name_A <- $name_S -> $name_B:")
+                for diagram in results
+                    display_pushout(category, diagram, morphisms_df)
+                end
             end
         elseif command == "from" && length(parts) > 1
             object_name = join(parts[2:end], " ")

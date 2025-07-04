@@ -5,7 +5,7 @@ This module is intended to be included and used by a frontend, such as a TUI or 
 =#
 module ConCart
 
-export initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, find_papers_for_object, LabeledConsciousnessGraph, nparts, subpart
+export find_pushout_candidates, find_pullback_candidates, initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, find_papers_for_object, LabeledConsciousnessGraph, nparts, subpart
 
 using Catlab.CategoricalAlgebra
 using Catlab.Presentations
@@ -263,5 +263,173 @@ function find_papers_for_object(category, object_name::String)
     citation_keys = unique(subpart(category, all_edges, :citation))
     return nothing, citation_keys
 end
+
+
+# Helper to get indices for an object specifier (name or wildcard)
+function _get_object_indices(category, specifier)
+    if specifier == "*"
+        return 1:nparts(category, :V)
+    else
+        idx = findfirst(c -> c == specifier, subpart(category, :obj_name))
+        return isnothing(idx) ? Int[] : [idx]
+    end
+end
+
+"""
+    find_pullback_candidates(category, spec_A, spec_B, spec_C)
+
+Finds all objects P that form a cone over the span A -> C <- B.
+Object specifiers can be names or a wildcard "*".
+Trivial results where P is A or B, or where A and B are the same
+(in wildcard searches), are filtered out.
+"""
+function find_pullback_candidates(category, spec_A::String, spec_B::String, spec_C::String)
+    indices_A = _get_object_indices(category, spec_A)
+    indices_B = _get_object_indices(category, spec_B)
+    indices_C = _get_object_indices(category, spec_C)
+
+    if isempty(indices_A) || isempty(indices_B) || isempty(indices_C)
+        return "Could not find one of the specified objects.", nothing
+    end
+
+    all_results = []
+
+    # Create a list of (A,B) pairs to check, avoiding duplicates from wildcards
+    pairs_to_check = []
+    if spec_A != "*" && spec_B != "*"
+        # User specified both, even if they are the same.
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B]
+    elseif spec_A != "*" # spec_B is "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B if ia != ib]
+    elseif spec_B != "*" # spec_A is "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B if ia != ib]
+    else # Both are "*"
+        # Avoid duplicates like (A,B) vs (B,A) and self-pullbacks (A,A)
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B if ia < ib]
+    end
+
+    for idx_C in indices_C, (idx_A, idx_B) in pairs_to_check
+        # Ensure the span A->C and B->C exists for this combination
+        a_to_c_edges = findall(e -> subpart(category, e, :src) == idx_A && subpart(category, e, :tgt) == idx_C, 1:nparts(category, :E))
+        b_to_c_edges = findall(e -> subpart(category, e, :src) == idx_B && subpart(category, e, :tgt) == idx_C, 1:nparts(category, :E))
+
+        if isempty(a_to_c_edges) || isempty(b_to_c_edges)
+            continue
+        end
+
+        # Find all predecessors of A and B
+        preds_A_edges = incident(category, idx_A, :tgt)
+        preds_A_verts = unique(subpart(category, preds_A_edges, :src))
+
+        preds_B_edges = incident(category, idx_B, :tgt)
+        preds_B_verts = unique(subpart(category, preds_B_edges, :src))
+
+        # The intersection of these predecessors are our candidate P objects
+        pullback_P_verts = intersect(Set(preds_A_verts), Set(preds_B_verts))
+
+        # For each candidate P, construct the full diagram, filtering out trivial cases
+        for p_idx in pullback_P_verts
+            # FILTER: Exclude cases where P is the same as A or B
+            if p_idx == idx_A || p_idx == idx_B
+                continue
+            end
+
+            p_to_a_edges = filter(e -> subpart(category, e, :src) == p_idx, preds_A_edges)
+            p_to_b_edges = filter(e -> subpart(category, e, :src) == p_idx, preds_B_edges)
+
+            for pa_edge in p_to_a_edges, pb_edge in p_to_b_edges, ac_edge in a_to_c_edges, bc_edge in b_to_c_edges
+                push!(all_results, Dict(
+                    "P_idx" => p_idx, "A_idx" => idx_A, "B_idx" => idx_B, "C_idx" => idx_C,
+                    "p_to_a_edge" => pa_edge, "p_to_b_edge" => pb_edge,
+                    "a_to_c_edge" => ac_edge, "b_to_c_edge" => bc_edge
+                ))
+            end
+        end
+    end
+
+    if isempty(all_results)
+        return "No non-trivial pullback candidates found for the given pattern.", nothing
+    end
+
+    return nothing, all_results
+end
+
+"""
+    find_pushout_candidates(category, spec_S, spec_A, spec_B)
+
+Finds all objects Q that form a cocone under the cospan A <- S -> B.
+Object specifiers can be names or a wildcard "*".
+Trivial results where Q is A or B, or where A and B are the same
+(in wildcard searches), are filtered out.
+"""
+function find_pushout_candidates(category, spec_S::String, spec_A::String, spec_B::String)
+    indices_S = _get_object_indices(category, spec_S)
+    indices_A = _get_object_indices(category, spec_A)
+    indices_B = _get_object_indices(category, spec_B)
+
+    if isempty(indices_S) || isempty(indices_A) || isempty(indices_B)
+        return "Could not find one of the specified objects.", nothing
+    end
+
+    all_results = []
+
+    # Create a list of (A,B) pairs to check, avoiding duplicates from wildcards
+    pairs_to_check = []
+    if spec_A != "*" && spec_B != "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B]
+    elseif spec_A != "*" # spec_B is "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B if ia != ib]
+    elseif spec_B != "*" # spec_A is "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B if ia != ib]
+    else # Both are "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B if ia < ib]
+    end
+
+    for idx_S in indices_S, (idx_A, idx_B) in pairs_to_check
+        # Ensure the cospan S->A and S->B exists
+        s_to_a_edges = findall(e -> subpart(category, e, :src) == idx_S && subpart(category, e, :tgt) == idx_A, 1:nparts(category, :E))
+        s_to_b_edges = findall(e -> subpart(category, e, :src) == idx_S && subpart(category, e, :tgt) == idx_B, 1:nparts(category, :E))
+
+        if isempty(s_to_a_edges) || isempty(s_to_b_edges)
+            continue
+        end
+
+        # Find all successors of A and B
+        succs_A_edges = incident(category, idx_A, :src)
+        succs_A_verts = unique(subpart(category, succs_A_edges, :tgt))
+
+        succs_B_edges = incident(category, idx_B, :src)
+        succs_B_verts = unique(subpart(category, succs_B_edges, :tgt))
+
+        # The intersection of these successors are our candidate Q objects
+        pushout_Q_verts = intersect(Set(succs_A_verts), Set(succs_B_verts))
+
+        # For each candidate Q, construct the full diagram, filtering out trivial cases
+        for q_idx in pushout_Q_verts
+            # FILTER: Exclude cases where Q is the same as A or B
+            if q_idx == idx_A || q_idx == idx_B
+                continue
+            end
+
+            a_to_q_edges = filter(e -> subpart(category, e, :tgt) == q_idx, succs_A_edges)
+            b_to_q_edges = filter(e -> subpart(category, e, :tgt) == q_idx, succs_B_edges)
+
+            for sa_edge in s_to_a_edges, sb_edge in s_to_b_edges, aq_edge in a_to_q_edges, bq_edge in b_to_q_edges
+                push!(all_results, Dict(
+                    "S_idx" => idx_S, "A_idx" => idx_A, "B_idx" => idx_B, "Q_idx" => q_idx,
+                    "s_to_a_edge" => sa_edge, "s_to_b_edge" => sb_edge,
+                    "a_to_q_edge" => aq_edge, "b_to_q_edge" => bq_edge
+                ))
+            end
+        end
+    end
+
+    if isempty(all_results)
+        return "No non-trivial pushout candidates found for the given pattern.", nothing
+    end
+
+    return nothing, all_results
+end
+
 
 end # module ConCart
