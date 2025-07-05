@@ -5,7 +5,7 @@ This module is intended to be included and used by a frontend, such as a TUI or 
 =#
 module ConCart
 
-export find_pushout_candidates, find_pullback_candidates, initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, find_papers_for_object, LabeledConsciousnessGraph, nparts, subpart
+export find_cospans, find_cospan_continuations, find_pushout_opportunities, find_pushout_candidates, find_pullback_candidates, initialize_database, find_lenses, find_connections_from_object, find_connections_to_object, find_papers_for_object, LabeledConsciousnessGraph, nparts, subpart
 
 using Catlab.CategoricalAlgebra
 using Catlab.Presentations
@@ -355,14 +355,12 @@ function find_pullback_candidates(category, spec_A::String, spec_B::String, spec
 end
 
 """
-    find_pushout_candidates(category, spec_S, spec_A, spec_B)
+    find_cospan_continuations(category, spec_S, spec_A, spec_B)
 
-Finds all objects Q that form a cocone under the cospan A <- S -> B.
-Object specifiers can be names or a wildcard "*".
-Trivial results where Q is A or B, or where A and B are the same
-(in wildcard searches), are filtered out.
+Given a cospan A <- S -> B, finds all pairs of paths starting from A and B.
+This is used to find both completed pushouts and opportunities for synthesis.
 """
-function find_pushout_candidates(category, spec_S::String, spec_A::String, spec_B::String)
+function find_cospan_continuations(category, spec_S::String, spec_A::String, spec_B::String)
     indices_S = _get_object_indices(category, spec_S)
     indices_A = _get_object_indices(category, spec_A)
     indices_B = _get_object_indices(category, spec_B)
@@ -386,7 +384,6 @@ function find_pushout_candidates(category, spec_S::String, spec_A::String, spec_
     end
 
     for idx_S in indices_S, (idx_A, idx_B) in pairs_to_check
-        # Ensure the cospan S->A and S->B exists
         s_to_a_edges = findall(e -> subpart(category, e, :src) == idx_S && subpart(category, e, :tgt) == idx_A, 1:nparts(category, :E))
         s_to_b_edges = findall(e -> subpart(category, e, :src) == idx_S && subpart(category, e, :tgt) == idx_B, 1:nparts(category, :E))
 
@@ -394,42 +391,84 @@ function find_pushout_candidates(category, spec_S::String, spec_A::String, spec_
             continue
         end
 
-        # Find all successors of A and B
         succs_A_edges = incident(category, idx_A, :src)
-        succs_A_verts = unique(subpart(category, succs_A_edges, :tgt))
-
         succs_B_edges = incident(category, idx_B, :src)
-        succs_B_verts = unique(subpart(category, succs_B_edges, :tgt))
 
-        # The intersection of these successors are our candidate Q objects
-        pushout_Q_verts = intersect(Set(succs_A_verts), Set(succs_B_verts))
+        # If A or B have no successors, there's nothing to find.
+        if isempty(succs_A_edges) || isempty(succs_B_edges)
+            continue
+        end
 
-        # For each candidate Q, construct the full diagram, filtering out trivial cases
-        for q_idx in pushout_Q_verts
-            # FILTER: Exclude cases where Q is the same as A or B
-            if q_idx == idx_A || q_idx == idx_B
-                continue
-            end
-
-            a_to_q_edges = filter(e -> subpart(category, e, :tgt) == q_idx, succs_A_edges)
-            b_to_q_edges = filter(e -> subpart(category, e, :tgt) == q_idx, succs_B_edges)
-
-            for sa_edge in s_to_a_edges, sb_edge in s_to_b_edges, aq_edge in a_to_q_edges, bq_edge in b_to_q_edges
-                push!(all_results, Dict(
-                    "S_idx" => idx_S, "A_idx" => idx_A, "B_idx" => idx_B, "Q_idx" => q_idx,
-                    "s_to_a_edge" => sa_edge, "s_to_b_edge" => sb_edge,
-                    "a_to_q_edge" => aq_edge, "b_to_q_edge" => bq_edge
-                ))
-            end
+        # Find all pairs of successor edges
+        for sa_edge in s_to_a_edges, sb_edge in s_to_b_edges, a_succ_edge in succs_A_edges, b_succ_edge in succs_B_edges
+            qa_idx = subpart(category, a_succ_edge, :tgt)
+            qb_idx = subpart(category, b_succ_edge, :tgt)
+            
+            push!(all_results, Dict(
+                "S_idx" => idx_S, "A_idx" => idx_A, "B_idx" => idx_B,
+                "QA_idx" => qa_idx, "QB_idx" => qb_idx,
+                "s_to_a_edge" => sa_edge, "s_to_b_edge" => sb_edge,
+                "a_to_qa_edge" => a_succ_edge, "b_to_qb_edge" => b_succ_edge
+            ))
         end
     end
 
     if isempty(all_results)
-        return "No non-trivial pushout candidates found for the given pattern.", nothing
+        return "No continuations found for the given cospan pattern.", nothing
     end
 
     return nothing, all_results
 end
 
+"""
+    find_cospans(category, spec_S, spec_A, spec_B)
+
+Finds all cospans A <- S -> B matching the given specifiers. This is used
+to identify potential synthesis opportunities.
+"""
+function find_cospans(category, spec_S::String, spec_A::String, spec_B::String)
+    indices_S = _get_object_indices(category, spec_S)
+    indices_A = _get_object_indices(category, spec_A)
+    indices_B = _get_object_indices(category, spec_B)
+
+    if isempty(indices_S) || isempty(indices_A) || isempty(indices_B)
+        return "Could not find one of the specified objects.", nothing
+    end
+
+    all_results = []
+
+    # Create a list of (A,B) pairs to check, avoiding duplicates from wildcards
+    pairs_to_check = []
+    if spec_A != "*" && spec_B != "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B]
+    elseif spec_A != "*" # spec_B is "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B if ia != ib]
+    elseif spec_B != "*" # spec_A is "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B if ia != ib]
+    else # Both are "*"
+        pairs_to_check = [(ia, ib) for ia in indices_A for ib in indices_B if ia < ib]
+    end
+
+    for idx_S in indices_S, (idx_A, idx_B) in pairs_to_check
+        s_to_a_edges = findall(e -> subpart(category, e, :src) == idx_S && subpart(category, e, :tgt) == idx_A, 1:nparts(category, :E))
+        s_to_b_edges = findall(e -> subpart(category, e, :src) == idx_S && subpart(category, e, :tgt) == idx_B, 1:nparts(category, :E))
+
+        if !isempty(s_to_a_edges) && !isempty(s_to_b_edges)
+            # Found a cospan. Return every combination of edges.
+            for sa_edge in s_to_a_edges, sb_edge in s_to_b_edges
+                 push!(all_results, Dict(
+                    "S_idx" => idx_S, "A_idx" => idx_A, "B_idx" => idx_B,
+                    "s_to_a_edge" => sa_edge, "s_to_b_edge" => sb_edge
+                ))
+            end
+        end
+    end
+    
+    if isempty(all_results)
+        return "No cospans found for the given pattern.", nothing
+    end
+
+    return nothing, all_results
+end
 
 end # module ConCart

@@ -5,11 +5,11 @@ Consciousness Cartography database.
 It uses the `concart.jl` library for its core logic and `Term.jl`
 for creating a rich, interactive user experience in the terminal. It now
 includes a self-contained command history feature and advanced search
-options for pullbacks and pushouts with wildcard support.
+options for pullbacks, pushouts, and synthesis opportunities.
 
 To Run:
 1. Ensure `concart.jl` is in the same directory and has been updated with
-   the wildcard-enabled pullback/pushout functions.
+   the required functions.
 2. Ensure the data files are in `../data/`.
 3. From the Julia REPL, install dependencies:
    (press `]`) pkg> add Term
@@ -135,12 +135,12 @@ function display_pushout(category, diagram::Dict, morphisms_df)
     s_line = "{blue bold}(" * subpart(category, diagram["S_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["S_idx"], :obj_name) * "{/bright_white}"
     a_line = "{blue bold}(" * subpart(category, diagram["A_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["A_idx"], :obj_name) * "{/bright_white}"
     b_line = "{blue bold}(" * subpart(category, diagram["B_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["B_idx"], :obj_name) * "{/bright_white}"
-    q_line = "{blue bold}(" * subpart(category, diagram["Q_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["Q_idx"], :obj_name) * "{/bright_white}"
+    q_line = "{blue bold}(" * subpart(category, diagram["QA_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["QA_idx"], :obj_name) * "{/bright_white}"
 
     sa_info = get_edge_info(category, diagram["s_to_a_edge"], morphisms_df)
     sb_info = get_edge_info(category, diagram["s_to_b_edge"], morphisms_df)
-    aq_info = get_edge_info(category, diagram["a_to_q_edge"], morphisms_df)
-    bq_info = get_edge_info(category, diagram["b_to_q_edge"], morphisms_df)
+    aq_info = get_edge_info(category, diagram["a_to_qa_edge"], morphisms_df)
+    bq_info = get_edge_info(category, diagram["b_to_qb_edge"], morphisms_df)
 
     final_text = """
     Found a pushout square with {yellow}Common Target (Q):{/yellow} $q_line
@@ -156,6 +156,31 @@ function display_pushout(category, diagram::Dict, morphisms_df)
         width=120
     ))
 end
+
+function display_synthesis_opportunity(category, diagram::Dict, morphisms_df)
+    s_line = "{blue bold}(" * subpart(category, diagram["S_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["S_idx"], :obj_name) * "{/bright_white}"
+    a_line = "{blue bold}(" * subpart(category, diagram["A_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["A_idx"], :obj_name) * "{/bright_white}"
+    b_line = "{blue bold}(" * subpart(category, diagram["B_idx"], :obj_type) * "){/blue bold} {bright_white}" * subpart(category, diagram["B_idx"], :obj_name) * "{/bright_white}"
+
+    sa_info = get_edge_info(category, diagram["s_to_a_edge"], morphisms_df)
+    sb_info = get_edge_info(category, diagram["s_to_b_edge"], morphisms_df)
+
+    final_text = """
+    {yellow}Opportunity for Synthesis:{/yellow}
+    A common source diverges to two distinct targets. Consider creating a new concept that unifies them.
+
+    {dim}Diverging paths:{/dim}
+    {bold}1:{/bold} $s_line → ($sa_info) → [ $a_line ]
+    {bold}2:{/bold} $s_line → ($sb_info) → [ $b_line ]
+    """
+    println(Term.Panel(
+        Term.RenderableText(final_text),
+        title="Synthesis Opportunity",
+        style="magenta",
+        width=120
+    ))
+end
+
 
 function display_table(df::DataFrame, title::String)
     if isempty(df)
@@ -203,7 +228,6 @@ function display_help()
       {dim}Finds paths. A step can be an {bold}object{/bold} (Type or "Name") or a{/dim}
       {dim}{bold}morphism{/bold} (e.g., <critiques>). Object-only queries are still supported.{/dim}
       {dim}e.g., find_lens * <critiques> *{/dim}
-      {dim}e.g., find_lens "IIT" Method{/dim}
 
     • {cyan}pullback {yellow}"<A>" "<B>" "<C>"{/yellow}
       {dim}Finds objects P that link to A and B, where A and B link to C.{/dim}
@@ -212,6 +236,10 @@ function display_help()
     • {cyan}pushout {yellow}"<S>" "<A>" "<B>"{/yellow}
       {dim}Finds objects Q that A and B both link to, from a common source S.{/dim}
       {dim}Use '*' as a wildcard for any object. e.g., pushout "IIT" "*" *{/dim}
+
+    • {cyan}synthesize {yellow}"<S>" "<A>" "<B>"{/yellow}
+      {dim}Finds cospans (A <- S -> B) which represent opportunities for synthesis.{/dim}
+      {dim}Use '*' as a wildcard for any object.{/dim}
 
     • {cyan}from {yellow}"<Object Name>"{/yellow}
       {dim}Shows all outgoing connections from an object.{/dim}
@@ -331,13 +359,29 @@ function main_repl_loop(category, papers_df, objects_df, morphisms_df)
             end
         elseif command == "pushout" && length(parts) == 4
             name_S, name_A, name_B = parts[2], parts[3], parts[4]
-            err, results = find_pushout_candidates(category, name_S, name_A, name_B)
+            err, results = find_cospan_continuations(category, name_S, name_A, name_B)
             if !isnothing(err)
                 print(Term.Panel(err, style="bold red", title="Error"))
             else
-                println("\nFound $(length(results)) pushout candidate(s) for the cospan $name_A <- $name_S -> $name_B:")
+                pushouts = filter(d -> d["QA_idx"] == d["QB_idx"], results)
+                if isempty(pushouts)
+                    println("\nNo completed pushout squares found for the cospan $name_A <- $name_S -> $name_B.")
+                else
+                    println("\nFound $(length(pushouts)) completed pushout square(s) for the cospan $name_A <- $name_S -> $name_B:")
+                    for diagram in pushouts
+                        display_pushout(category, diagram, morphisms_df)
+                    end
+                end
+            end
+        elseif command == "synthesize" && length(parts) == 4
+            name_S, name_A, name_B = parts[2], parts[3], parts[4]
+            err, results = find_cospans(category, name_S, name_A, name_B)
+            if !isnothing(err)
+                print(Term.Panel(err, style="bold red", title="Error"))
+            else
+                println("\nFound $(length(results)) synthesis opportunities for the cospan $name_A <- $name_S -> $name_B:")
                 for diagram in results
-                    display_pushout(category, diagram, morphisms_df)
+                    display_synthesis_opportunity(category, diagram, morphisms_df)
                 end
             end
         elseif command == "from" && length(parts) > 1
